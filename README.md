@@ -27,3 +27,6 @@ Dashboard displaying pertinent training information:
 
 Comprehensive analysis of each activity:
 ![Activity](https://user-images.githubusercontent.com/58704461/112891739-65c5ef00-90d0-11eb-88a4-aeae06f93120.gif)
+
+Custom Segments:
+![Segment](https://user-images.githubusercontent.com/58704461/112892215-f43a7080-90d0-11eb-9fe5-bd97b9d79ae6.JPG)
