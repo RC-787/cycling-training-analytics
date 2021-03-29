@@ -11,3 +11,11 @@ git clone https://github.com/RC-787/cycling-training-analytics.git
 cd cycling-training-analytics
 yarn
 ```
+
+## Starting Development
+
+Start the app in the `dev` environment:
+
+```bash
+yarn start
+```
