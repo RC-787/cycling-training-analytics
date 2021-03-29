@@ -19,3 +19,11 @@ Start the app in the `dev` environment:
 ```bash
 yarn start
 ```
+
+## Features
+
+Dashboard displaying pertinent training information:
+![Dashboard](https://user-images.githubusercontent.com/58704461/112891717-61013b00-90d0-11eb-8c17-6d640e6fcc38.gif)
+
+Comprehensive analysis of each activity:
+![Activity](https://user-images.githubusercontent.com/58704461/112891739-65c5ef00-90d0-11eb-88a4-aeae06f93120.gif)
