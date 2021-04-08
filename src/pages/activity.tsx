@@ -10,6 +10,7 @@ import HeartRateZoneDistribution from '../components/heartRateZoneDistribution';
 import ActivityCritialPower from '../components/activityCriticalPower';
 import ActivityCritialHeartRate from '../components/activityCriticalHeartRate';
 import ActivitySegmentResults from '../components/activitySegmentResults';
+import ActivityLaps from '../components/activityLaps';
 import UserContext, { UserContextType } from '../common/userContext';
 import Activity from '../types/activity';
 import User from '../types/user';
@@ -78,6 +79,12 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
         <div className="row mt-5">
           <div className="col-12">
             <PerformanceAnalysis activity={state.activity} distanceUnit={this.user.distanceUnit} elevationUnit={this.user.elevationUnit} />
+          </div>
+        </div>
+        {/* Laps */}
+        <div className="row mt-5">
+          <div className="col-12">
+            <ActivityLaps activity={state.activity} distanceUnit={this.user.distanceUnit} />
           </div>
         </div>
         {/* Segment Results */}

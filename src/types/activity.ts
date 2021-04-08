@@ -31,6 +31,7 @@ type Activity = {
   gradientData: Array<number | null> | undefined;
   tss: number | undefined;
   intensityFactor: number | undefined;
+  laps: Array<{ startIndex: number; endIndex: number }>;
 };
 
 export default Activity;

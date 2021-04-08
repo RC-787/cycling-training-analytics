@@ -149,6 +149,22 @@ function calculateCriticalData(inputData: Array<number | null>): Array<[number, 
   return criticalData;
 }
 
+function getLaps(importedActivity: ActivityInterface): Array<{ startIndex: number; endIndex: number }> {
+  const laps = importedActivity.getLaps();
+  if (laps.length === 0) {
+    return [];
+  }
+
+  const activityStartTimeUnixSeconds = importedActivity.startDate.getTime() / 1000;
+  const result: Array<{ startIndex: number; endIndex: number }> = [];
+  for (let i = 0; i < laps.length; i += 1) {
+    const lapStartUnixSeconds = laps[i].startDate.getTime() / 1000;
+    const lapEndUnixSeconds = laps[i].endDate.getTime() / 1000;
+    result.push({ startIndex: lapStartUnixSeconds - activityStartTimeUnixSeconds, endIndex: lapEndUnixSeconds - activityStartTimeUnixSeconds });
+  }
+  return result;
+}
+
 async function getActivityFromFile(_event: Electron.IpcRendererEvent, args: { filePath: string; user: User }): Promise<void> {
   const { filePath } = args;
   const fileContent = await fsPromises.readFile(filePath);
@@ -221,6 +237,7 @@ async function getActivityFromFile(_event: Electron.IpcRendererEvent, args: { fi
     gradientData: getStream(importedActivity, 'Grade'),
     tss: undefined,
     intensityFactor: undefined,
+    laps: getLaps(importedActivity),
   };
 
   if (activity.powerData !== undefined) {
