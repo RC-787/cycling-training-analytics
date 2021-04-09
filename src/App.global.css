@@ -27,9 +27,13 @@
   user-select: none;
 }
 .form-control,
+.modal-content,
 .form-select {
   background-color: #262626;
   color: #b3b3b3;
+}
+.modal-content{
+  border-color: #b3b3b3;
 }
 
 /* Navbar */

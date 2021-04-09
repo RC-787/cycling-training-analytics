@@ -38,10 +38,21 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
     this.user = context.user;
     this.activityId = Number((props.location.state as LocationState).activityId);
     this.database = Database.getDatabaseInstance();
+    this.deleteLapCallback = this.deleteLapCallback.bind(this);
   }
 
   async componentDidMount(): Promise<void> {
     const activity = await this.database.getActivity(this.activityId);
+    this.setState({ activity });
+  }
+
+  async deleteLapCallback(lapToDelete: { startIndex: number; endIndex: number }): Promise<void> {
+    const { activity } = this.state;
+    if (activity === undefined) {
+      return;
+    }
+    activity.laps = activity?.laps.filter((x) => x.startIndex !== lapToDelete.startIndex && x.endIndex !== lapToDelete.endIndex);
+    await this.database.saveActivity(activity);
     this.setState({ activity });
   }
 
@@ -84,7 +95,7 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
         {/* Laps */}
         <div className="row mt-5">
           <div className="col-12">
-            <ActivityLaps activity={state.activity} distanceUnit={this.user.distanceUnit} />
+            <ActivityLaps activity={state.activity} distanceUnit={this.user.distanceUnit} deleteLapCallback={this.deleteLapCallback} />
           </div>
         </div>
         {/* Segment Results */}
