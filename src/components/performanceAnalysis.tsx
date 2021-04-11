@@ -605,20 +605,22 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       return;
     }
 
-    const latitudeLongitudeData = props.activity.latitudeLongitudeData.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex);
-    const firstNonNullValue = latitudeLongitudeData.find((x) => x[0] != null && x[1] !== null);
+    const latitudeLongitudeData = props.activity.latitudeLongitudeData
+      .slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex)
+      .filter((x) => x.latitude !== null && x.longitude !== null) as Array<{ latitude: number; longitude: number }>;
+    const firstNonNullValue = latitudeLongitudeData.find((x) => x.latitude != null && x.longitude !== null);
     if (firstNonNullValue === undefined) {
       // Can't create a segment without any lat/long values
       return;
     }
-    let minLatitude = Number(firstNonNullValue[0]);
+    let minLatitude = Number(firstNonNullValue.latitude);
     let maxLatitude = minLatitude;
-    let minLongitude = Number(firstNonNullValue[1]);
+    let minLongitude = Number(firstNonNullValue.longitude);
     let maxLongitude = minLongitude;
 
     for (let i = 0; i < latitudeLongitudeData.length; i += 1) {
-      const latitude = latitudeLongitudeData[i][0];
-      const longitude = latitudeLongitudeData[i][1];
+      const { latitude } = latitudeLongitudeData[i];
+      const { longitude } = latitudeLongitudeData[i];
       if (latitude !== null && longitude !== null) {
         if (latitude < minLatitude) {
           minLatitude = latitude;
@@ -635,28 +637,25 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       }
     }
 
-    let segmentDistanceDataInMeters: Array<number | null> = [];
-    let sgementDistanceInMeters = 0;
+    let segmentDistanceDataInMeters: Array<number> = [];
+    let segementDistanceInMeters = 0;
     if (props.activity.distanceData !== undefined) {
-      const firstNonNullDistanceValue = props.activity.distanceData.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex).find((x) => x !== null);
-      const lastNonNullDistanceValue = props.activity.distanceData
+      segmentDistanceDataInMeters = props.activity.distanceData
         .slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex)
-        .reverse()
-        .find((x) => x !== null);
-
-      if (firstNonNullDistanceValue !== null && firstNonNullDistanceValue !== undefined) {
-        segmentDistanceDataInMeters = props.activity.distanceData
-          .slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex)
-          .map((x) => (x !== null ? x - firstNonNullDistanceValue : null));
-
-        if (lastNonNullDistanceValue !== null && lastNonNullDistanceValue !== undefined) {
-          sgementDistanceInMeters = lastNonNullDistanceValue - firstNonNullDistanceValue;
-        }
-      }
+        .filter((x) => x !== null) as Array<number>;
+      segementDistanceInMeters = segmentDistanceDataInMeters[segmentDistanceDataInMeters.length - 1] - segmentDistanceDataInMeters[0];
     }
 
-    const segmentElevationDataInMeters = props.activity.elevationDataInMeters?.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex);
-    const segmentGradientData = props.activity.gradientData?.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex);
+    let segmentElevationDataInMeters = props.activity.elevationDataInMeters?.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex) as
+      | Array<number>
+      | undefined;
+    if (segmentElevationDataInMeters !== undefined) {
+      segmentElevationDataInMeters = segmentElevationDataInMeters.filter((x) => x == null);
+    }
+    let segmentGradientData = props.activity.gradientData?.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex) as Array<number> | undefined;
+    if (segmentGradientData !== undefined) {
+      segmentGradientData = segmentGradientData.filter((x) => x == null);
+    }
 
     let segment: Segment = {
       segmentId: undefined,
@@ -666,7 +665,7 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       maxLatitude,
       minLongitude,
       maxLongitude,
-      distanceInMeters: sgementDistanceInMeters,
+      distanceInMeters: segementDistanceInMeters,
       latitudeLongitudeData,
       elevationDataInMeters: segmentElevationDataInMeters,
       gradientData: segmentGradientData,

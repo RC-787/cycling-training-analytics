@@ -48,9 +48,9 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
       if (criticalPowerForActivity !== undefined) {
         for (let j = 0; j < criticalPowerForActivity.length; j += 1) {
           if (criticalPowerData.length < j + 1) {
-            criticalPowerData.push([j + 1, criticalPowerForActivity[j][1], activities[i].date]);
-          } else if (criticalPowerData[j][1] < criticalPowerForActivity[j][1]) {
-            criticalPowerData[j] = [j + 1, criticalPowerForActivity[j][1], activities[i].date];
+            criticalPowerData.push([j + 1, criticalPowerForActivity[j].value, activities[i].date]);
+          } else if (criticalPowerData[j][1] < criticalPowerForActivity[j].value) {
+            criticalPowerData[j] = [j + 1, criticalPowerForActivity[j].value, activities[i].date];
           }
         }
       }
@@ -151,9 +151,9 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
       if (criticalPowerForActivity !== undefined) {
         for (let j = 0; j < criticalPowerForActivity.length; j += 1) {
           if (criticalPowerData.length < j + 1) {
-            criticalPowerData.push([j + 1, criticalPowerForActivity[j][1], activities[i].date]);
-          } else if (criticalPowerData[j][1] < criticalPowerForActivity[j][1]) {
-            criticalPowerData[j] = [j + 1, criticalPowerForActivity[j][1], activities[i].date];
+            criticalPowerData.push([j + 1, criticalPowerForActivity[j].value, activities[i].date]);
+          } else if (criticalPowerData[j][1] < criticalPowerForActivity[j].value) {
+            criticalPowerData[j] = [j + 1, criticalPowerForActivity[j].value, activities[i].date];
           }
         }
       }

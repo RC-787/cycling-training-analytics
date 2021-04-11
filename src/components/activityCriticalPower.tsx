@@ -61,7 +61,7 @@ export default class ActivityCriticalPower extends React.Component<Props> {
       },
       series: [
         {
-          data: props.activity.criticalPowerData,
+          data: props.activity.criticalPowerData.map((x) => [x.durationInSeconds, x.value]),
           type: 'line',
           name: 'Power',
           symbol: 'none',

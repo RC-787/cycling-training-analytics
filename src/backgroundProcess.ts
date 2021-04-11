@@ -16,15 +16,19 @@ function getDefaultActivityTitle(startDate: Date): string {
   return `${daysOfWeek[startDate.getDay()]} Ride`;
 }
 
-function getLatitudeAndLongitudeDataForActivity(importedActivity: ActivityInterface): Array<[number | null, number | null]> | undefined {
+function getLatitudeAndLongitudeDataForActivity(
+  importedActivity: ActivityInterface
+): Array<{ latitude: number | null; longitude: number | null }> | undefined {
   if (importedActivity.hasStreamData('Latitude') && importedActivity.hasStreamData('Longitude')) {
     const latitudeData = importedActivity.getStream('Latitude').getData();
     const longitudeData = importedActivity.getStream('Longitude').getData();
 
     if (latitudeData != null && longitudeData !== null) {
-      const latitudeLongitudeData: Array<[number | null, number | null]> = [];
+      const latitudeLongitudeData: Array<{ latitude: number | null; longitude: number | null }> = [];
       for (let i = 0; i < latitudeData.length; i += 1) {
-        latitudeLongitudeData.push([latitudeData[i], longitudeData[i]]);
+        const latitude = latitudeData[i];
+        const longitude = longitudeData[i];
+        latitudeLongitudeData.push({ latitude, longitude });
       }
       return latitudeLongitudeData;
     }
@@ -120,8 +124,8 @@ function getMax(input: Array<number | null>): number | undefined {
   return undefined;
 }
 
-function calculateCriticalData(inputData: Array<number | null>): Array<[number, number]> {
-  const criticalData: Array<[number, number]> = [];
+function calculateCriticalData(inputData: Array<number | null>): Array<{ durationInSeconds: number; value: number }> {
+  const criticalData: Array<{ durationInSeconds: number; value: number }> = [];
   for (let intervalDuration = 1; intervalDuration <= inputData.length; intervalDuration += 1) {
     let sum = 0;
     let index = 0;
@@ -143,7 +147,7 @@ function calculateCriticalData(inputData: Array<number | null>): Array<[number, 
       }
       index += 1;
     }
-    criticalData.push([intervalDuration, Math.round(intervalMax)]);
+    criticalData.push({ durationInSeconds: intervalDuration, value: Math.round(intervalMax) });
   }
 
   return criticalData;
@@ -177,15 +181,15 @@ async function getActivityFromFile(_event: Electron.IpcRendererEvent, args: { fi
   let minLongitude: number | undefined;
   let maxLongitude: number | undefined;
   if (latitudeLongitudeData !== undefined) {
-    const firstNonNullValue = latitudeLongitudeData?.find((x) => x[0] != null && x[1] !== null);
+    const firstNonNullValue = latitudeLongitudeData?.find((x) => x.latitude != null && x.longitude !== null);
     if (firstNonNullValue !== undefined) {
-      minLatitude = Number(firstNonNullValue[0]);
+      minLatitude = Number(firstNonNullValue.latitude);
       maxLatitude = minLatitude;
-      minLongitude = Number(firstNonNullValue[1]);
+      minLongitude = Number(firstNonNullValue.longitude);
       maxLongitude = minLongitude;
       for (let i = 0; i < latitudeLongitudeData.length; i += 1) {
-        const latitude = latitudeLongitudeData[i][0];
-        const longitude = latitudeLongitudeData[i][1];
+        const { latitude } = latitudeLongitudeData[i];
+        const { longitude } = latitudeLongitudeData[i];
         if (latitude !== null && longitude !== null) {
           if (latitude < minLatitude) {
             minLatitude = latitude;
@@ -275,6 +279,66 @@ async function getActivityFromFile(_event: Electron.IpcRendererEvent, args: { fi
   ipcRenderer.send('get-activity-from-file-result', activity);
 }
 
+function getClosestIndexesOnActivityThatMatchTargetPoint(activity: Activity, targetPoint: { latitude: number; longitude: number }): Array<number> {
+  const result: Array<number> = [];
+
+  if (activity.latitudeLongitudeData === undefined) {
+    return result;
+  }
+
+  const DISTANCE_CONSTRAINT_IN_METERS = 20;
+
+  // Check if any point(s) on the activity passed within the specified distance of the target point
+  for (let i = 0; i < activity.latitudeLongitudeData?.length; i += 1) {
+    let latitudeOfCurrentPointOnActivity = activity.latitudeLongitudeData[i].latitude;
+    let longitudeOfCurrentPointOnActivity = activity.latitudeLongitudeData[i].longitude;
+
+    if (latitudeOfCurrentPointOnActivity !== null && longitudeOfCurrentPointOnActivity !== null) {
+      let distanceBetweenCurrentPointOnActivityAndTargetPoint = getDistanceBetweenCoOrdinatesInMeters(
+        latitudeOfCurrentPointOnActivity,
+        longitudeOfCurrentPointOnActivity,
+        targetPoint.latitude,
+        targetPoint.longitude
+      );
+
+      if (distanceBetweenCurrentPointOnActivityAndTargetPoint < DISTANCE_CONSTRAINT_IN_METERS) {
+        let closestDistanceToTargetPoint = distanceBetweenCurrentPointOnActivityAndTargetPoint;
+        let indexOfPointOnActivityClosestToTargetPoint = i;
+
+        if (i + 1 >= activity.latitudeLongitudeData.length) {
+          // If this is the last point in the activity then it is a match since no subsequent points can be closer
+          result.push(i);
+        } else {
+          for (let j = i + 1; j < activity.latitudeLongitudeData.length; j += 1) {
+            latitudeOfCurrentPointOnActivity = activity.latitudeLongitudeData[j].latitude;
+            longitudeOfCurrentPointOnActivity = activity.latitudeLongitudeData[j].longitude;
+
+            if (latitudeOfCurrentPointOnActivity !== null && longitudeOfCurrentPointOnActivity !== null) {
+              distanceBetweenCurrentPointOnActivityAndTargetPoint = getDistanceBetweenCoOrdinatesInMeters(
+                latitudeOfCurrentPointOnActivity,
+                longitudeOfCurrentPointOnActivity,
+                targetPoint.latitude,
+                targetPoint.longitude
+              );
+              if (distanceBetweenCurrentPointOnActivityAndTargetPoint < closestDistanceToTargetPoint) {
+                // Current point is closer
+                closestDistanceToTargetPoint = distanceBetweenCurrentPointOnActivityAndTargetPoint;
+                indexOfPointOnActivityClosestToTargetPoint = j;
+              } else if (distanceBetweenCurrentPointOnActivityAndTargetPoint > DISTANCE_CONSTRAINT_IN_METERS) {
+                // We have passed the closet point
+                i = j + 1;
+                result.push(indexOfPointOnActivityClosestToTargetPoint);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
 async function checkIfSegmentIsOnActivity(segment: Segment, activity: Activity): Promise<void> {
   if (
     activity.latitudeLongitudeData === undefined ||
@@ -287,137 +351,50 @@ async function checkIfSegmentIsOnActivity(segment: Segment, activity: Activity):
   }
 
   // Check if segment is within bounding box of the activity
-  if (activity.minLatitude > segment.minLatitude) {
-    return;
-  }
-  if (activity.maxLatitude < segment.maxLatitude) {
-    return;
-  }
-  if (activity.minLongitude > segment.minLongitude) {
-    return;
-  }
-  if (activity.maxLongitude < segment.maxLongitude) {
+  if (
+    activity.minLatitude > segment.minLatitude ||
+    activity.maxLatitude < segment.maxLatitude ||
+    activity.minLongitude > segment.minLongitude ||
+    activity.maxLongitude < segment.maxLongitude
+  ) {
     return;
   }
 
-  const DISTANCE_CONSTRAINT_IN_METERS = 20;
-  let indexesOnActivityThatMatchSegmentStartPoint: Array<number> = [];
-  const indexesOnActivityThatMatchSegmentEndPoint: Array<number> = [];
-  const segmentStartCoOrdinates = segment.latitudeLongitudeData[0];
-  const segmentEndCoOrdinates = segment.latitudeLongitudeData[segment.latitudeLongitudeData.length - 1];
+  const segmentStartPoint = segment.latitudeLongitudeData[0];
+  const segmentEndPoint = segment.latitudeLongitudeData[segment.latitudeLongitudeData.length - 1];
 
-  // Check if any point(s) on the activity passed within the specified distance of the segment start or segment end
-  for (let i = 0; i < activity.latitudeLongitudeData.length; i += 1) {
-    let [latitude, longitude] = activity.latitudeLongitudeData[i];
-    if (
-      latitude !== null &&
-      longitude !== null &&
-      latitude >= segment.minLatitude &&
-      latitude <= segment.maxLatitude &&
-      longitude >= segment.minLongitude &&
-      longitude <= segment.maxLongitude
-    ) {
-      const distanceBetweenPointOnActivityAndSegmentStartInMeters = getDistanceBetweenCoOrdinatesInMeters(
-        latitude,
-        longitude,
-        segmentStartCoOrdinates[0] ?? 0,
-        segmentStartCoOrdinates[1] ?? 0
-      );
-      const distanceBetweenPointOnActivityAndSegmentEndInMeters = getDistanceBetweenCoOrdinatesInMeters(
-        latitude,
-        longitude,
-        segmentEndCoOrdinates[0] ?? 0,
-        segmentEndCoOrdinates[1] ?? 0
-      );
+  let indexesOnActivityThatMatchSegmentStart = getClosestIndexesOnActivityThatMatchTargetPoint(activity, segmentStartPoint);
+  let indexesOnActivityThatMatchSegmentEnd = getClosestIndexesOnActivityThatMatchTargetPoint(activity, segmentEndPoint);
 
-      if (
-        distanceBetweenPointOnActivityAndSegmentStartInMeters <= DISTANCE_CONSTRAINT_IN_METERS ||
-        distanceBetweenPointOnActivityAndSegmentEndInMeters <= DISTANCE_CONSTRAINT_IN_METERS
-      ) {
-        // The current point on the activity is within the specified distance of either the segment start or segment end
-        const matchType = distanceBetweenPointOnActivityAndSegmentStartInMeters <= DISTANCE_CONSTRAINT_IN_METERS ? 'SegmentStart' : 'SegmentEnd';
-        if (
-          matchType === 'SegmentEnd' &&
-          (indexesOnActivityThatMatchSegmentStartPoint.length === 0 || indexesOnActivityThatMatchSegmentStartPoint.find((x) => x < i) === undefined)
-        ) {
-          // If the point on the activity matches the segment end, then make sure we already have at least one match for the segment start within the activity (otherwise the search is pointless)
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-
-        // Lets check if any of the subsequent points on the activity are closer to the segment start/end
-        let closestDistanceFromActivityToTargetPointOnSegment =
-          matchType === 'SegmentStart' ? distanceBetweenPointOnActivityAndSegmentStartInMeters : distanceBetweenPointOnActivityAndSegmentEndInMeters;
-        let indexOfClosestPointOnActivityToTargetPointOnSegment = i;
-        if (i + 1 >= activity.latitudeLongitudeData.length) {
-          break;
-        }
-        for (let j = i + 1; j < activity.latitudeLongitudeData.length; j += 1) {
-          [latitude, longitude] = activity.latitudeLongitudeData[j];
-          if (
-            latitude !== null &&
-            longitude !== null &&
-            latitude >= segment.minLatitude &&
-            latitude <= segment.maxLatitude &&
-            longitude >= segment.minLongitude &&
-            longitude <= segment.maxLongitude
-          ) {
-            const distanceBetweenCurrentPointAndTargetPointOnSegment = getDistanceBetweenCoOrdinatesInMeters(
-              latitude,
-              longitude,
-              matchType === 'SegmentStart' ? segmentStartCoOrdinates[0] ?? 0 : segmentEndCoOrdinates[0] ?? 0,
-              matchType === 'SegmentStart' ? segmentStartCoOrdinates[1] ?? 0 : segmentEndCoOrdinates[1] ?? 0
-            );
-            if (distanceBetweenCurrentPointAndTargetPointOnSegment < closestDistanceFromActivityToTargetPointOnSegment) {
-              // Current point is closer to the segment start/end
-              closestDistanceFromActivityToTargetPointOnSegment = distanceBetweenCurrentPointAndTargetPointOnSegment;
-              indexOfClosestPointOnActivityToTargetPointOnSegment = j;
-              j += 1;
-            } else if (distanceBetweenCurrentPointAndTargetPointOnSegment < DISTANCE_CONSTRAINT_IN_METERS) {
-              // Current point is still within the allowed constraint
-              j += 1;
-            } else {
-              // We have already passed the closest point
-              if (matchType === 'SegmentStart') {
-                indexesOnActivityThatMatchSegmentStartPoint.push(indexOfClosestPointOnActivityToTargetPointOnSegment);
-              } else {
-                indexesOnActivityThatMatchSegmentEndPoint.push(indexOfClosestPointOnActivityToTargetPointOnSegment);
-              }
-              i = j;
-              break;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // No potential matches found
-  if (indexesOnActivityThatMatchSegmentStartPoint.length === 0 || indexesOnActivityThatMatchSegmentEndPoint.length === 0) {
+  if (indexesOnActivityThatMatchSegmentStart.length === 0 || indexesOnActivityThatMatchSegmentEnd.length === 0) {
+    // No matches found
     return;
   }
 
-  // Remove any startIndexes that occured after the max end index since they can't possibly match
-  const maxEndIndex = Math.max.apply({}, indexesOnActivityThatMatchSegmentEndPoint);
-  indexesOnActivityThatMatchSegmentStartPoint = indexesOnActivityThatMatchSegmentStartPoint.filter((x) => x < maxEndIndex);
-  if (indexesOnActivityThatMatchSegmentStartPoint.length === 0) {
+  // Remove any invalid entries
+  const minIndexOnActivityThatMatchesSegmentStart = Math.min.apply(null, indexesOnActivityThatMatchSegmentStart);
+  const maxIndexOnActivityThatMatchesSegmentEnd = Math.max.apply(null, indexesOnActivityThatMatchSegmentEnd);
+  indexesOnActivityThatMatchSegmentStart = indexesOnActivityThatMatchSegmentStart.filter((x) => x < maxIndexOnActivityThatMatchesSegmentEnd);
+  indexesOnActivityThatMatchSegmentEnd = indexesOnActivityThatMatchSegmentEnd.filter((x) => x > minIndexOnActivityThatMatchesSegmentStart);
+  if (indexesOnActivityThatMatchSegmentStart.length === 0 || indexesOnActivityThatMatchSegmentEnd.length === 0) {
+    // No matches found
     return;
   }
 
   // Check if the distance between each startIndex and endIndex could potentially match based on the segment length
-  const potentialMatchingStartAndEndIndexOfActivity: Array<[number, number]> = [];
+  const potentialMatchingStartAndEndIndexOfActivity: Array<{ startIndex: number; endIndex: number }> = [];
   const MAX_TOTAL_DISTANCE_DIFFERENTIAL_IN_METERS = 100;
-  for (let j = 0; j < indexesOnActivityThatMatchSegmentStartPoint.length; j += 1) {
-    for (let k = 0; k < indexesOnActivityThatMatchSegmentEndPoint.length; k += 1) {
-      const currentStartIndex = indexesOnActivityThatMatchSegmentStartPoint[j];
-      const currentEndIndex = indexesOnActivityThatMatchSegmentEndPoint[k];
+  for (let j = 0; j < indexesOnActivityThatMatchSegmentStart.length; j += 1) {
+    for (let k = 0; k < indexesOnActivityThatMatchSegmentEnd.length; k += 1) {
+      const currentStartIndex = indexesOnActivityThatMatchSegmentStart[j];
+      const currentEndIndex = indexesOnActivityThatMatchSegmentEnd[k];
       if (currentEndIndex > currentStartIndex) {
         const startDistance = activity.distanceData?.[currentStartIndex];
         const endDistance = activity.distanceData?.[currentEndIndex];
         if (startDistance !== undefined && startDistance !== null && endDistance !== undefined && endDistance !== null) {
           const distanceBetweenStartAndEnd = endDistance - startDistance;
           if (Math.abs(distanceBetweenStartAndEnd - segment.distanceInMeters) < MAX_TOTAL_DISTANCE_DIFFERENTIAL_IN_METERS) {
-            potentialMatchingStartAndEndIndexOfActivity.push([currentStartIndex, currentEndIndex]);
+            potentialMatchingStartAndEndIndexOfActivity.push({ startIndex: currentStartIndex, endIndex: currentEndIndex });
           }
         }
       }
@@ -430,35 +407,35 @@ async function checkIfSegmentIsOnActivity(segment: Segment, activity: Activity):
   }
 
   // At this point we have potential matches within the activity based on passing the segment startPoint, passing the segment endPoint and matching the total segment length
-  // Final check is to see if each point on the segment is between the startPoint and endPoint that we have identified as potential matches
+  // Final check is to see if each point on the segment is between the startPoint and endPoint on the activity
   let moduloValue: number;
   if (segment.latitudeLongitudeData.length < 100) {
     // Check all points on the segment are present in the potential match
     moduloValue = 1;
   } else if (segment.latitudeLongitudeData.length < 1000) {
-    // Check every 5th point on the segment is present in the potential match
-    moduloValue = 5;
-  } else {
     // Check every 10th point on the segment is present in the potential match
     moduloValue = 10;
+  } else if (segment.latitudeLongitudeData.length < 10000) {
+    // Check every 100th point on the segment is present in the potential match
+    moduloValue = 100;
+  } else {
+    // Check every 200th point on the segment is present in the potential match
+    moduloValue = 200;
   }
 
-  const matchingStartAndEndIndexOfActivity: Array<[number, number]> = [];
+  const matchingStartAndEndIndexOfActivity: Array<{ startIndex: number; endIndex: number }> = [];
+  const DISTANCE_CONSTRAINT_IN_METERS = 20;
   for (let i = 0; i < potentialMatchingStartAndEndIndexOfActivity.length; i += 1) {
     let isMatch = true;
-
-    for (let j = 1; j < segment.latitudeLongitudeData.length - 1 && j % moduloValue === 0; j += 1) {
-      // Starting with j = 1 since we already know the first point matches
-
-      const segmentPointLatitude = segment.latitudeLongitudeData[j][0];
-      const segmentPointLongitude = segment.latitudeLongitudeData[j][1];
-
+    for (let j = 0; j < segment.latitudeLongitudeData.length && j % moduloValue === 0; j += 1) {
+      const segmentPointLatitude = segment.latitudeLongitudeData[j].latitude;
+      const segmentPointLongitude = segment.latitudeLongitudeData[j].longitude;
       // Check if the point from the segment is on the activity
       let segmentPointIsOnActivity = false;
-      for (let k = potentialMatchingStartAndEndIndexOfActivity[i][0]; k < potentialMatchingStartAndEndIndexOfActivity[i][1]; k += 1) {
+      for (let k = potentialMatchingStartAndEndIndexOfActivity[i].startIndex; k <= potentialMatchingStartAndEndIndexOfActivity[i].endIndex; k += 1) {
         const distance = getDistanceBetweenCoOrdinatesInMeters(
-          activity.latitudeLongitudeData[k][0] ?? 0,
-          activity.latitudeLongitudeData[k][1] ?? 0,
+          activity.latitudeLongitudeData[k].latitude ?? 0,
+          activity.latitudeLongitudeData[k].longitude ?? 0,
           segmentPointLatitude ?? 0,
           segmentPointLongitude ?? 0
         );
@@ -467,7 +444,6 @@ async function checkIfSegmentIsOnActivity(segment: Segment, activity: Activity):
           break;
         }
       }
-
       if (!segmentPointIsOnActivity) {
         isMatch = false;
         break;
@@ -489,8 +465,8 @@ async function checkIfSegmentIsOnActivity(segment: Segment, activity: Activity):
   const segmentId = segment.segmentId ?? -1;
   const activityId = activity.activityId ?? -1;
   for (let i = 0; i < matchingStartAndEndIndexOfActivity.length; i += 1) {
-    const startIndex = matchingStartAndEndIndexOfActivity[i][0];
-    const endIndex = matchingStartAndEndIndexOfActivity[i][1];
+    const { startIndex } = matchingStartAndEndIndexOfActivity[i];
+    const { endIndex } = matchingStartAndEndIndexOfActivity[i];
     const segmentResult: SegmentResult = {
       segmentResultId: undefined,
       segmentId,

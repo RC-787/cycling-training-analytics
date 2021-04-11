@@ -19,12 +19,12 @@ type Activity = {
   maxLatitude: number | undefined;
   minLongitude: number | undefined;
   maxLongitude: number | undefined;
-  latitudeLongitudeData: Array<[number | null, number | null]> | undefined;
+  latitudeLongitudeData: Array<{ latitude: number | null; longitude: number | null }> | undefined;
   distanceData: Array<number | null> | undefined;
   powerData: Array<number | null> | undefined;
-  criticalPowerData: Array<[number, number]> | undefined; // DurationInSeconds, Power
+  criticalPowerData: Array<{ durationInSeconds: number; value: number }> | undefined;
   heartRateData: Array<number | null> | undefined;
-  criticalHeartRateData: Array<[number, number]> | undefined; // DurationInSeconds, HeartRate
+  criticalHeartRateData: Array<{ durationInSeconds: number; value: number }> | undefined;
   cadenceData: Array<number | null> | undefined;
   speedDataInKilometersPerHour: Array<number | null> | undefined;
   elevationDataInMeters: Array<number | null> | undefined;

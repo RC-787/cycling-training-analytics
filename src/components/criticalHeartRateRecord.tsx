@@ -48,9 +48,9 @@ export default class CriticalHeartRateRecord extends React.Component<Props, Stat
       if (criticalHeartRateForActivity !== undefined) {
         for (let j = 0; j < criticalHeartRateForActivity.length; j += 1) {
           if (criticalHeartRateData.length < j + 1) {
-            criticalHeartRateData.push([j + 1, criticalHeartRateForActivity[j][1], activities[i].date]);
-          } else if (criticalHeartRateData[j][1] < criticalHeartRateForActivity[j][1]) {
-            criticalHeartRateData[j] = [j + 1, criticalHeartRateForActivity[j][1], activities[i].date];
+            criticalHeartRateData.push([j + 1, criticalHeartRateForActivity[j].value, activities[i].date]);
+          } else if (criticalHeartRateData[j][1] < criticalHeartRateForActivity[j].value) {
+            criticalHeartRateData[j] = [j + 1, criticalHeartRateForActivity[j].value, activities[i].date];
           }
         }
       }
@@ -151,9 +151,9 @@ export default class CriticalHeartRateRecord extends React.Component<Props, Stat
       if (criticalHeartRateForActivity !== undefined) {
         for (let j = 0; j < criticalHeartRateForActivity.length; j += 1) {
           if (criticalHeartRateData.length < j + 1) {
-            criticalHeartRateData.push([j + 1, criticalHeartRateForActivity[j][1], activities[i].date]);
-          } else if (criticalHeartRateData[j][1] < criticalHeartRateForActivity[j][1]) {
-            criticalHeartRateData[j] = [j + 1, criticalHeartRateForActivity[j][1], activities[i].date];
+            criticalHeartRateData.push([j + 1, criticalHeartRateForActivity[j].value, activities[i].date]);
+          } else if (criticalHeartRateData[j][1] < criticalHeartRateForActivity[j].value) {
+            criticalHeartRateData[j] = [j + 1, criticalHeartRateForActivity[j].value, activities[i].date];
           }
         }
       }

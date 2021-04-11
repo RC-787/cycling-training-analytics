@@ -66,7 +66,7 @@ export default class CriticalHeartRate extends React.Component<Props> {
       },
       series: [
         {
-          data: props.activity.criticalHeartRateData,
+          data: props.activity.criticalHeartRateData.map((x) => [x.durationInSeconds, x.value]),
           type: 'line',
           symbol: 'none',
           lineStyle: {

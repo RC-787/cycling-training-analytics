@@ -4,7 +4,7 @@ import leaflet from 'leaflet';
 import PubSub from 'pubsub-js';
 
 type Props = {
-  latitudeLongitudeData: Array<[number | null, number | null]>;
+  latitudeLongitudeData: Array<{ latitude: number | null; longitude: number | null }>;
   allowZoom: boolean;
   renderStartAndEndFlag: boolean;
 };
@@ -52,18 +52,18 @@ export default class Map extends React.Component<Props> {
     const { props } = this;
 
     const routeToPlot: Array<[number, number]> = [];
-    const firstNonNullValue = props.latitudeLongitudeData.find((x) => x[0] != null && x[1] !== null);
+    const firstNonNullValue = props.latitudeLongitudeData.find((x) => x.latitude != null && x.longitude !== null);
     if (firstNonNullValue === undefined) {
       return;
     }
-    let minLatitude = Number(firstNonNullValue[0]);
+    let minLatitude = Number(firstNonNullValue.latitude);
     let maxLatitude = minLatitude;
-    let minLongitude = Number(firstNonNullValue[1]);
+    let minLongitude = Number(firstNonNullValue.longitude);
     let maxLongitude = minLongitude;
 
     for (let i = 0; i < props.latitudeLongitudeData.length; i += 1) {
-      const latitude = props.latitudeLongitudeData[i][0];
-      const longitude = props.latitudeLongitudeData[i][1];
+      const { latitude } = props.latitudeLongitudeData[i];
+      const { longitude } = props.latitudeLongitudeData[i];
       if (latitude !== null && longitude !== null) {
         routeToPlot.push([latitude, longitude]);
         if (latitude < minLatitude) {
@@ -94,15 +94,15 @@ export default class Map extends React.Component<Props> {
 
     // Add start and end markers
     if (props.renderStartAndEndFlag) {
-      if (firstNonNullValue[0] !== null && firstNonNullValue[1] !== null) {
-        leaflet.marker([firstNonNullValue[0], firstNonNullValue[1]], { icon: this.startMarkerIcon }).addTo(map);
+      if (firstNonNullValue.latitude !== null && firstNonNullValue.longitude !== null) {
+        leaflet.marker([firstNonNullValue.latitude, firstNonNullValue.longitude], { icon: this.startMarkerIcon }).addTo(map);
       }
       const lastNonNullValue = props.latitudeLongitudeData
         .slice()
         .reverse()
-        .find((x) => x[0] != null && x[1] !== null);
-      if (lastNonNullValue !== undefined && lastNonNullValue[0] !== null && lastNonNullValue[1] !== null) {
-        leaflet.marker([lastNonNullValue[0], lastNonNullValue[1]], { icon: this.finishMarkerIcon }).addTo(map);
+        .find((x) => x.latitude != null && x.longitude !== null);
+      if (lastNonNullValue !== undefined && lastNonNullValue.latitude !== null && lastNonNullValue.longitude !== null) {
+        leaflet.marker([lastNonNullValue.latitude, lastNonNullValue.longitude], { icon: this.finishMarkerIcon }).addTo(map);
       }
     }
 
@@ -117,11 +117,11 @@ export default class Map extends React.Component<Props> {
     // When the Performance Analysis chart is hovered over on the Activity page, show the corresponding location on the map
     PubSub.subscribe('performance-analysis-chart-hover', (_msg: unknown, hoveredIndex: number) => {
       const target = props.latitudeLongitudeData[hoveredIndex];
-      if (target[0] !== null && target[1] !== null) {
+      if (target.latitude !== null && target.longitude !== null) {
         if (this.hoverMarkerReference !== undefined) {
           map.removeLayer(this.hoverMarkerReference);
         }
-        this.hoverMarkerReference = leaflet.marker([target[0], target[1]], { icon: this.hoverMarkerIcon }).addTo(map);
+        this.hoverMarkerReference = leaflet.marker([target.latitude, target.longitude], { icon: this.hoverMarkerIcon }).addTo(map);
       }
     });
 
@@ -140,18 +140,18 @@ export default class Map extends React.Component<Props> {
 
       const zoomedRouteToPlot: Array<[number, number]> = [];
       const targetData = props.latitudeLongitudeData.slice(args.startIndex, args.endIndex + 1);
-      const firstNonNullValueInTargetData = targetData.find((x) => x[0] != null && x[1] !== null);
+      const firstNonNullValueInTargetData = targetData.find((x) => x.latitude != null && x.longitude !== null);
       if (firstNonNullValueInTargetData === undefined) {
         return;
       }
-      let minLatitudeOfZoomedData = Number(firstNonNullValueInTargetData[0]);
+      let minLatitudeOfZoomedData = Number(firstNonNullValueInTargetData.latitude);
       let maxLatitudeOfZoomedData = minLatitudeOfZoomedData;
-      let minLongitudeOfZoomedData = Number(firstNonNullValueInTargetData[1]);
+      let minLongitudeOfZoomedData = Number(firstNonNullValueInTargetData.longitude);
       let maxLongitudeOfZoomedData = minLongitudeOfZoomedData;
 
       for (let i = 0; i < targetData.length; i += 1) {
-        const latitude = targetData[i][0];
-        const longitude = targetData[i][1];
+        const { latitude } = targetData[i];
+        const { longitude } = targetData[i];
         if (latitude !== null && longitude !== null) {
           zoomedRouteToPlot.push([latitude, longitude]);
           if (latitude < minLatitudeOfZoomedData) {

@@ -7,10 +7,10 @@ type Segment = {
   minLongitude: number;
   maxLongitude: number;
   distanceInMeters: number;
-  latitudeLongitudeData: Array<[number | null, number | null]>;
-  elevationDataInMeters: Array<number | null> | undefined;
-  gradientData: Array<number | null> | undefined;
-  distanceDataInMeters: Array<number | null>;
+  latitudeLongitudeData: Array<{ latitude: number; longitude: number }>;
+  elevationDataInMeters: Array<number> | undefined;
+  gradientData: Array<number> | undefined;
+  distanceDataInMeters: Array<number>;
 };
 
 export default Segment;
