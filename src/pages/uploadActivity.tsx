@@ -102,6 +102,17 @@ class UploadActivity extends React.Component<unknown, State> {
     }
   }
 
+  cancelButtonClicked(): void {
+    this.setState({ filePath: undefined, activity: undefined }, () => {
+      // Stretch the container to use the full height of the page
+      const buttonContainer = document.getElementById('select-activity-button-container');
+      if (buttonContainer === null) {
+        return;
+      }
+      buttonContainer.style.height = `${window.innerHeight - buttonContainer.offsetTop}px`;
+    });
+  }
+
   render(): JSX.Element {
     const { state } = this;
 
@@ -188,8 +199,11 @@ class UploadActivity extends React.Component<unknown, State> {
                             </label>
                           </div>
                           <div className="text-center">
-                            <button type="button" className="btn btn-secondary" onClick={this.saveActivity}>
+                            <button type="button" className="btn btn-secondary me-2" onClick={this.saveActivity}>
                               Save
+                            </button>
+                            <button type="button" className="btn btn-outline-secondary" onClick={() => this.cancelButtonClicked()}>
+                              Cancel
                             </button>
                           </div>
                         </form>
