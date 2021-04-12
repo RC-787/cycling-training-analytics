@@ -38,11 +38,23 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
     this.user = context.user;
     this.activityId = Number((props.location.state as LocationState).activityId);
     this.database = Database.getDatabaseInstance();
+    this.saveLapCallback = this.saveLapCallback.bind(this);
     this.deleteLapCallback = this.deleteLapCallback.bind(this);
   }
 
   async componentDidMount(): Promise<void> {
     const activity = await this.database.getActivity(this.activityId);
+    this.setState({ activity });
+  }
+
+  async saveLapCallback(lapToSave: { startIndex: number; endIndex: number }): Promise<void> {
+    const { activity } = this.state;
+    if (activity === undefined) {
+      return;
+    }
+    activity.laps.push(lapToSave);
+    activity.laps.sort((a, b) => a.startIndex - b.startIndex);
+    await this.database.saveActivity(activity);
     this.setState({ activity });
   }
 
@@ -89,7 +101,12 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
         {/* Performance Analysis Chart */}
         <div className="row mt-5">
           <div className="col-12">
-            <PerformanceAnalysis activity={state.activity} distanceUnit={this.user.distanceUnit} elevationUnit={this.user.elevationUnit} />
+            <PerformanceAnalysis
+              activity={state.activity}
+              distanceUnit={this.user.distanceUnit}
+              elevationUnit={this.user.elevationUnit}
+              saveLapCallback={this.saveLapCallback}
+            />
           </div>
         </div>
         {/* Laps */}

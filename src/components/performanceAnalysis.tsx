@@ -258,6 +258,7 @@ type Props = {
   activity: Activity;
   distanceUnit: string;
   elevationUnit: string;
+  saveLapCallback(lapToSave: { startIndex: number; endIndex: number }): void;
 };
 
 type ZoomSummary = {
@@ -495,7 +496,7 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
 
     const { props } = this;
     if (props.activity.powerData !== undefined) {
-      const zoomedData = props.activity.powerData.slice(startIndex, endIndex + 1);
+      const zoomedData = props.activity.powerData.slice(startIndex, endIndex);
       zoomSummary.averagePower = getAverage(zoomedData);
       if (zoomSummary.averagePower !== undefined) {
         zoomSummary.averagePower = Math.round(zoomSummary.averagePower);
@@ -503,7 +504,7 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       zoomSummary.maxPower = getMax(zoomedData);
     }
     if (props.activity.heartRateData !== undefined) {
-      const zoomedData = props.activity.heartRateData.slice(startIndex, endIndex + 1);
+      const zoomedData = props.activity.heartRateData.slice(startIndex, endIndex);
       zoomSummary.averageHeartRate = getAverage(zoomedData);
       if (zoomSummary.averageHeartRate !== undefined) {
         zoomSummary.averageHeartRate = Math.round(zoomSummary.averageHeartRate);
@@ -511,7 +512,7 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       zoomSummary.maxHeartRate = getMax(zoomedData);
     }
     if (props.activity.cadenceData !== undefined) {
-      const zoomedData = props.activity.cadenceData.slice(startIndex, endIndex + 1);
+      const zoomedData = props.activity.cadenceData.slice(startIndex, endIndex);
       zoomSummary.averageCadence = getAverage(zoomedData);
       if (zoomSummary.averageCadence !== undefined) {
         zoomSummary.averageCadence = Math.round(zoomSummary.averageCadence);
@@ -519,7 +520,7 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       zoomSummary.maxCadence = getMax(zoomedData);
     }
     if (props.activity.speedDataInKilometersPerHour !== undefined) {
-      const zoomedData = props.activity.speedDataInKilometersPerHour.slice(startIndex, endIndex + 1);
+      const zoomedData = props.activity.speedDataInKilometersPerHour.slice(startIndex, endIndex);
       zoomSummary.averageSpeedInKilometersPerHour = getAverage(zoomedData);
       if (zoomSummary.averageSpeedInKilometersPerHour !== undefined) {
         zoomSummary.averageSpeedInKilometersPerHour = Number(zoomSummary.averageSpeedInKilometersPerHour.toFixed(2));
@@ -527,11 +528,8 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       zoomSummary.maxSpeedInKilometersPerHour = getMax(zoomedData);
     }
     if (props.activity.distanceData !== undefined) {
-      const startDistance = props.activity.distanceData[startIndex];
-      const endDistance = props.activity.distanceData[endIndex];
-      if (startDistance !== null && endDistance !== null) {
-        zoomSummary.distanceInMeters = endDistance - startDistance;
-      }
+      const zoomedData = props.activity.distanceData.slice(startIndex, endIndex);
+      zoomSummary.distanceInMeters = (zoomedData[zoomedData.length - 1] ?? 0) - (zoomedData[0] ?? 0);
     }
 
     return zoomSummary;
@@ -678,6 +676,14 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
     this.saveSegmentModal?.hide();
   }
 
+  saveLap(): void {
+    if (this.zoomedDataStartIndex === undefined || this.zoomedDataEndIndex === undefined) {
+      return;
+    }
+    const { props } = this;
+    props.saveLapCallback({ startIndex: this.zoomedDataStartIndex, endIndex: this.zoomedDataEndIndex });
+  }
+
   render(): JSX.Element {
     const { props, state } = this;
 
@@ -765,26 +771,27 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
                           </td>
                         </tr>
                       )}
-                      {state.zoomSummary.averageSpeedInKilometersPerHour !== undefined && state.zoomSummary.maxSpeedInKilometersPerHour !== undefined && (
-                        <tr>
-                          <td>Speed ({props.distanceUnit}/h)</td>
-                          <td className="text-end">
-                            <sub>AVG </sub>
-                            {UnitConverter.convertMetersToUnit(state.zoomSummary.averageSpeedInKilometersPerHour * 1000, props.distanceUnit)}
-                          </td>
-                          <td className="text-end">
-                            <sub>MAX </sub>
-                            {UnitConverter.convertMetersToUnit(state.zoomSummary.maxSpeedInKilometersPerHour * 1000, props.distanceUnit)}
-                          </td>
-                        </tr>
-                      )}
+                      {state.zoomSummary.averageSpeedInKilometersPerHour !== undefined &&
+                        state.zoomSummary.maxSpeedInKilometersPerHour !== undefined && (
+                          <tr>
+                            <td>Speed ({props.distanceUnit}/h)</td>
+                            <td className="text-end">
+                              <sub>AVG </sub>
+                              {UnitConverter.convertMetersToUnit(state.zoomSummary.averageSpeedInKilometersPerHour * 1000, props.distanceUnit)}
+                            </td>
+                            <td className="text-end">
+                              <sub>MAX </sub>
+                              {UnitConverter.convertMetersToUnit(state.zoomSummary.maxSpeedInKilometersPerHour * 1000, props.distanceUnit)}
+                            </td>
+                          </tr>
+                        )}
                     </tbody>
                   </table>
                   <div className="d-grid gap-1 mt-1">
                     <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.showSaveSegmentModal()}>
                       Create Segment
                     </button>
-                    <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.resetZoom()}>
+                    <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.saveLap()}>
                       Save as Lap
                     </button>
                     <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.resetZoom()}>

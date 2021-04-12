@@ -26,7 +26,7 @@ function getAverage(data: Array<number | null> | undefined, startIndex: number, 
     return undefined;
   }
 
-  const targetData = data.slice(startIndex, endIndex + 1);
+  const targetData = data.slice(startIndex, endIndex);
   let sum = 0;
   for (let i = 0; i < targetData.length; i += 1) {
     sum += targetData[i] ?? 0;
@@ -64,17 +64,30 @@ export default class ActivityLaps extends React.Component<Props> {
 
     const lapDetails: Array<LapDetails> = [];
     if (activity.laps !== undefined && activity.laps.length > 0) {
-      for (let i = 0; i < activity.laps.length; i += 1) {
-        lapDetails.push({
-          startIndex: activity.laps[i].startIndex,
-          endIndex: activity.laps[i].endIndex,
-          durationInSeconds: activity.laps[i].endIndex - activity.laps[i].startIndex,
-          distanceInMeters: activity.distanceData?.[activity.laps[i].endIndex - activity.laps[i].startIndex] ?? 0,
-          averagePower: getAverage(activity.powerData, activity.laps[i].startIndex, activity.laps[i].endIndex),
-          averageHeartRate: getAverage(activity.heartRateData, activity.laps[i].startIndex, activity.laps[i].endIndex),
-          averageCadence: getAverage(activity.cadenceData, activity.laps[i].startIndex, activity.laps[i].endIndex),
-          averageSpeedInKilometersPerHour: getAverage(activity.speedDataInKilometersPerHour, activity.laps[i].startIndex, activity.laps[i].endIndex),
-        });
+      if (activity.distanceData !== undefined) {
+        for (let i = 0; i < activity.laps.length; i += 1) {
+          const averagePower = getAverage(activity.powerData, activity.laps[i].startIndex, activity.laps[i].endIndex);
+          const averageHeartRate = getAverage(activity.heartRateData, activity.laps[i].startIndex, activity.laps[i].endIndex);
+          const averageCadence = getAverage(activity.cadenceData, activity.laps[i].startIndex, activity.laps[i].endIndex);
+          const averageSpeedInKilometersPerHour = getAverage(
+            activity.speedDataInKilometersPerHour,
+            activity.laps[i].startIndex,
+            activity.laps[i].endIndex
+          );
+          const distanceData = activity?.distanceData.slice(activity.laps[i].startIndex, activity.laps[i].endIndex);
+
+          lapDetails.push({
+            startIndex: activity.laps[i].startIndex,
+            endIndex: activity.laps[i].endIndex,
+            durationInSeconds: activity.laps[i].endIndex - activity.laps[i].startIndex,
+            distanceInMeters: (distanceData[distanceData.length - 1] ?? 0) - (distanceData[0] ?? 0),
+            averagePower: averagePower === undefined ? undefined : Math.round(averagePower),
+            averageHeartRate: averageHeartRate === undefined ? undefined : Math.round(averageHeartRate),
+            averageCadence: averageCadence === undefined ? undefined : Math.round(averageCadence),
+            averageSpeedInKilometersPerHour:
+              averageSpeedInKilometersPerHour === undefined ? undefined : Number(averageSpeedInKilometersPerHour.toFixed(2)),
+          });
+        }
       }
     }
 
@@ -107,9 +120,9 @@ export default class ActivityLaps extends React.Component<Props> {
                   <tr key={uuidv4()} style={{ cursor: 'pointer' }}>
                     <td>{UnitConverter.convertSecondsToHHmmss(lap.durationInSeconds)}</td>
                     <td>{UnitConverter.convertMetersToUnit(lap.distanceInMeters, distanceUnit)}</td>
-                    <td>{lap.averagePower?.toFixed(0) ?? 'N/A'}</td>
-                    <td>{lap.averageHeartRate?.toFixed(0) ?? 'N/A'}</td>
-                    <td>{lap.averageCadence?.toFixed(0) ?? 'N/A'}</td>
+                    <td>{lap.averagePower ?? 'N/A'}</td>
+                    <td>{lap.averageHeartRate ?? 'N/A'}</td>
+                    <td>{lap.averageCadence ?? 'N/A'}</td>
                     <td>
                       {lap.averageSpeedInKilometersPerHour !== undefined
                         ? UnitConverter.convertMetersToUnit(lap.averageSpeedInKilometersPerHour * 1000, distanceUnit)
