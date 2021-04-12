@@ -276,6 +276,7 @@ type ZoomSummary = {
 type State = {
   chartHasBeenZoomed: boolean;
   zoomSummary: ZoomSummary | undefined;
+  hideZoomSummary: boolean;
 };
 
 export default class PerformanceAnalysis extends React.Component<Props, State> {
@@ -296,6 +297,7 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
     this.state = {
       chartHasBeenZoomed: false,
       zoomSummary: undefined,
+      hideZoomSummary: false,
     };
     this.database = Database.getDatabaseInstance();
     this.saveSegmentModalId = uuidv4();
@@ -684,86 +686,113 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
         {/* Zoom Summary */}
         {state.chartHasBeenZoomed && state.zoomSummary !== undefined && (
           <div className="position-relative">
-            <div className="position-absolute top-0 end-0 border bg-light" style={{ zIndex: 9999999999 }}>
+            <div className="position-absolute top-0 end-0 border bg-light" style={{ zIndex: 9999999999, borderRadius: '5px', minWidth: '250px' }}>
               <h6 className="text-center">Zoom Summary</h6>
-              <table className="table table-light table-sm mb-0" style={{ font: '12px Microsoft YaHei' }}>
-                <tbody>
-                  <tr>
-                    <td>Time</td>
-                    <td className="text-end" colSpan={2}>
-                      {UnitConverter.convertSecondsToHHmmss(state.zoomSummary.durationInSeconds)}
-                    </td>
-                  </tr>
-                  {state.zoomSummary.distanceInMeters !== undefined && (
-                    <tr>
-                      <td>Distance ({props.distanceUnit})</td>
-                      <td className="text-end" colSpan={2}>
-                        {UnitConverter.convertMetersToUnit(state.zoomSummary.distanceInMeters, props.distanceUnit)}
-                      </td>
-                    </tr>
+              <button
+                className="btn btn-secondary btn-sm position-absolute top-0 end-0 badge"
+                type="button"
+                onClick={() => this.setState({ hideZoomSummary: !state.hideZoomSummary })}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  {!state.hideZoomSummary && (
+                    <path
+                      fillRule="evenodd"
+                      d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707zM15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707z"
+                    />
                   )}
-                  {state.zoomSummary.averagePower !== undefined && state.zoomSummary.maxPower !== undefined && (
-                    <tr>
-                      <td>Power (W)</td>
-                      <td className="text-end">
-                        <sub>AVG </sub>
-                        {state.zoomSummary.averagePower}
-                      </td>
-                      <td className="text-end">
-                        <sub>MAX </sub>
-                        {state.zoomSummary.maxPower}
-                      </td>
-                    </tr>
+                  {state.hideZoomSummary && (
+                    <path
+                      fillRule="evenodd"
+                      d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z"
+                    />
                   )}
-                  {state.zoomSummary.averageHeartRate !== undefined && state.zoomSummary.maxHeartRate !== undefined && (
-                    <tr>
-                      <td>Heart Rate (bpm)</td>
-                      <td className="text-end">
-                        <sub>AVG </sub>
-                        {state.zoomSummary.averageHeartRate}
-                      </td>
-                      <td className="text-end">
-                        <sub>MAX </sub>
-                        {state.zoomSummary.maxHeartRate}
-                      </td>
-                    </tr>
-                  )}
-                  {state.zoomSummary.averageCadence !== undefined && state.zoomSummary.maxCadence !== undefined && (
-                    <tr>
-                      <td>Cadence (rpm)</td>
-                      <td className="text-end">
-                        <sub>AVG </sub>
-                        {state.zoomSummary.averageCadence}
-                      </td>
-                      <td className="text-end">
-                        <sub>MAX </sub>
-                        {state.zoomSummary.maxCadence}
-                      </td>
-                    </tr>
-                  )}
-                  {state.zoomSummary.averageSpeedInKilometersPerHour !== undefined && state.zoomSummary.maxSpeedInKilometersPerHour !== undefined && (
-                    <tr>
-                      <td>Speed ({props.distanceUnit}/h)</td>
-                      <td className="text-end">
-                        <sub>AVG </sub>
-                        {UnitConverter.convertMetersToUnit(state.zoomSummary.averageSpeedInKilometersPerHour * 1000, props.distanceUnit)}
-                      </td>
-                      <td className="text-end">
-                        <sub>MAX </sub>
-                        {UnitConverter.convertMetersToUnit(state.zoomSummary.maxSpeedInKilometersPerHour * 1000, props.distanceUnit)}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              <div className="d-grid gap-1 mt-1">
-                <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.showSaveSegmentModal()}>
-                  Create Segment
-                </button>
-                <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.resetZoom()}>
-                  Reset Zoom
-                </button>
-              </div>
+                </svg>
+              </button>
+              {!state.hideZoomSummary && (
+                <section>
+                  <table className="table table-light table-sm mb-0" style={{ font: '12px Microsoft YaHei' }}>
+                    <tbody>
+                      <tr>
+                        <td>Time</td>
+                        <td className="text-end" colSpan={2}>
+                          {UnitConverter.convertSecondsToHHmmss(state.zoomSummary.durationInSeconds)}
+                        </td>
+                      </tr>
+                      {state.zoomSummary.distanceInMeters !== undefined && (
+                        <tr>
+                          <td>Distance ({props.distanceUnit})</td>
+                          <td className="text-end" colSpan={2}>
+                            {UnitConverter.convertMetersToUnit(state.zoomSummary.distanceInMeters, props.distanceUnit)}
+                          </td>
+                        </tr>
+                      )}
+                      {state.zoomSummary.averagePower !== undefined && state.zoomSummary.maxPower !== undefined && (
+                        <tr>
+                          <td>Power (W)</td>
+                          <td className="text-end">
+                            <sub>AVG </sub>
+                            {state.zoomSummary.averagePower}
+                          </td>
+                          <td className="text-end">
+                            <sub>MAX </sub>
+                            {state.zoomSummary.maxPower}
+                          </td>
+                        </tr>
+                      )}
+                      {state.zoomSummary.averageHeartRate !== undefined && state.zoomSummary.maxHeartRate !== undefined && (
+                        <tr>
+                          <td>Heart Rate (bpm)</td>
+                          <td className="text-end">
+                            <sub>AVG </sub>
+                            {state.zoomSummary.averageHeartRate}
+                          </td>
+                          <td className="text-end">
+                            <sub>MAX </sub>
+                            {state.zoomSummary.maxHeartRate}
+                          </td>
+                        </tr>
+                      )}
+                      {state.zoomSummary.averageCadence !== undefined && state.zoomSummary.maxCadence !== undefined && (
+                        <tr>
+                          <td>Cadence (rpm)</td>
+                          <td className="text-end">
+                            <sub>AVG </sub>
+                            {state.zoomSummary.averageCadence}
+                          </td>
+                          <td className="text-end">
+                            <sub>MAX </sub>
+                            {state.zoomSummary.maxCadence}
+                          </td>
+                        </tr>
+                      )}
+                      {state.zoomSummary.averageSpeedInKilometersPerHour !== undefined && state.zoomSummary.maxSpeedInKilometersPerHour !== undefined && (
+                        <tr>
+                          <td>Speed ({props.distanceUnit}/h)</td>
+                          <td className="text-end">
+                            <sub>AVG </sub>
+                            {UnitConverter.convertMetersToUnit(state.zoomSummary.averageSpeedInKilometersPerHour * 1000, props.distanceUnit)}
+                          </td>
+                          <td className="text-end">
+                            <sub>MAX </sub>
+                            {UnitConverter.convertMetersToUnit(state.zoomSummary.maxSpeedInKilometersPerHour * 1000, props.distanceUnit)}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                  <div className="d-grid gap-1 mt-1">
+                    <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.showSaveSegmentModal()}>
+                      Create Segment
+                    </button>
+                    <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.resetZoom()}>
+                      Save as Lap
+                    </button>
+                    <button className="btn btn-sm btn-primary badge" type="button" onClick={() => this.resetZoom()}>
+                      Reset Zoom
+                    </button>
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         )}
