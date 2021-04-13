@@ -131,6 +131,10 @@ export default class Database extends Dexie {
       .and((x) => x.date > startDate && x.date < endDate)
       .toArray();
   }
+
+  public async deleteActivity(activityId: number): Promise<void> {
+    await this.activities.delete(activityId);
+  }
   // #endregion
 
   // #region Segments
@@ -213,6 +217,10 @@ export default class Database extends Dexie {
       });
     });
     return result;
+  }
+
+  public async deleteActivitySegmentResults(activityId: number): Promise<void> {
+    await this.segmentResults.where('activityId').equals(activityId).delete();
   }
   // #endregion
 }
