@@ -169,6 +169,10 @@ export default class Database extends Dexie {
     }
     throw new Error('An error occured when retireving Segments.');
   }
+
+  public async deleteSegment(segmentId: number): Promise<void> {
+    await this.segments.delete(segmentId);
+  }
   // #endregion
 
   // #region SegmentResults
@@ -221,6 +225,10 @@ export default class Database extends Dexie {
 
   public async deleteActivitySegmentResults(activityId: number): Promise<void> {
     await this.segmentResults.where('activityId').equals(activityId).delete();
+  }
+
+  public async deleteSegmentResults(segmentId: number): Promise<void> {
+    await this.segmentResults.where('segmentId').equals(segmentId).delete();
   }
   // #endregion
 }

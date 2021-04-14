@@ -97,7 +97,7 @@ export default class ElevationProfile extends React.Component<Props, unknown> {
       yAxis: {
         type: 'value',
         max: 'dataMax',
-        min: 0,
+        min: 'dataMin',
         boundaryGap: false,
         splitLine: {
           show: false,

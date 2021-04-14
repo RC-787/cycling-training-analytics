@@ -643,18 +643,22 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       segmentDistanceDataInMeters = props.activity.distanceData
         .slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex)
         .filter((x) => x !== null) as Array<number>;
-      segementDistanceInMeters = segmentDistanceDataInMeters[segmentDistanceDataInMeters.length - 1] - segmentDistanceDataInMeters[0];
+      if (segmentDistanceDataInMeters.length > 0) {
+        const startingDistance = segmentDistanceDataInMeters[0] ?? 0;
+        segmentDistanceDataInMeters = segmentDistanceDataInMeters.map((x) => x - startingDistance);
+        segementDistanceInMeters = segmentDistanceDataInMeters[segmentDistanceDataInMeters.length - 1] - segmentDistanceDataInMeters[0];
+      }
     }
 
     let segmentElevationDataInMeters = props.activity.elevationDataInMeters?.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex) as
       | Array<number>
       | undefined;
     if (segmentElevationDataInMeters !== undefined) {
-      segmentElevationDataInMeters = segmentElevationDataInMeters.filter((x) => x == null);
+      segmentElevationDataInMeters = segmentElevationDataInMeters.filter((x) => x !== null);
     }
     let segmentGradientData = props.activity.gradientData?.slice(this.zoomedDataStartIndex, this.zoomedDataEndIndex) as Array<number> | undefined;
     if (segmentGradientData !== undefined) {
-      segmentGradientData = segmentGradientData.filter((x) => x == null);
+      segmentGradientData = segmentGradientData.filter((x) => x !== null);
     }
 
     let segment: Segment = {
