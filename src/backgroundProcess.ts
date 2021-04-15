@@ -554,7 +554,17 @@ async function segmentCreated(_event: Electron.IpcRendererEvent, segment: Segmen
   ipcRenderer.send('segment-processing-completed');
 }
 
+async function findSegmentsOnActivity(_event: Electron.IpcRendererEvent, activity: Activity): Promise<void> {
+  const segmentsToCheck = await database.getAllSegments(activity.userId);
+  for (let i = 0; i < segmentsToCheck.length; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await checkIfSegmentIsOnActivity(segmentsToCheck[i], activity);
+  }
+  ipcRenderer.send('find-segments-on-activity-completed');
+}
+
 export default function InitializeBackgroundProcess(): void {
   ipcRenderer.on('get-activity-from-file', getActivityFromFile);
   ipcRenderer.on('segment-created', segmentCreated);
+  ipcRenderer.on('find-segments-on-activity', findSegmentsOnActivity);
 }

@@ -159,7 +159,7 @@ ipcMain.handle(
     }
 
     const dialogResult = await dialog.showOpenDialog(mainWindow, {
-      title: 'Velocity - Upload Activity',
+      title: 'Upload Activity',
       properties: ['openFile'],
       filters: [{ name: 'Activity Files', extensions: ['fit'] }],
     });
@@ -172,29 +172,25 @@ ipcMain.handle(
 );
 
 ipcMain.on('get-activity-from-file', (_event, args: { filePath: string; user: User }): void => {
-  if (backgroundWindow === null) {
-    return;
-  }
-  backgroundWindow.webContents.send('get-activity-from-file', args);
+  backgroundWindow?.webContents.send('get-activity-from-file', args);
 });
 
 ipcMain.on('get-activity-from-file-result', (_event, activity: Activity): void => {
-  if (mainWindow === null) {
-    return;
-  }
-  mainWindow.webContents.send('get-activity-from-file-result', activity);
+  mainWindow?.webContents.send('get-activity-from-file-result', activity);
+});
+
+ipcMain.on('find-segments-on-activity', (_event, activity: Activity): void => {
+  backgroundWindow?.webContents.send('find-segments-on-activity', activity);
+});
+
+ipcMain.on('find-segments-on-activity-completed', () => {
+  mainWindow?.webContents.send('find-segments-on-activity-completed');
 });
 
 ipcMain.on('segment-created', (_event, segment: Segment): void => {
-  if (backgroundWindow === null) {
-    return;
-  }
-  backgroundWindow.webContents.send('segment-created', segment);
+  backgroundWindow?.webContents.send('segment-created', segment);
 });
 
 ipcMain.on('segment-processing-completed', (): void => {
-  if (mainWindow === null) {
-    return;
-  }
-  mainWindow.webContents.send('segment-processing-completed');
+  mainWindow?.webContents.send('segment-processing-completed');
 });

@@ -37,6 +37,7 @@ class UploadActivity extends React.Component<unknown, State> {
     this.database = Database.getDatabaseInstance();
     this.promptUserToSelectFiles = this.promptUserToSelectFiles.bind(this);
     this.getActivityFromFileResult = this.getActivityFromFileResult.bind(this);
+    this.findSegmentsOnActivityCompleted = this.findSegmentsOnActivityCompleted.bind(this);
     this.saveActivity = this.saveActivity.bind(this);
   }
 
@@ -50,6 +51,7 @@ class UploadActivity extends React.Component<unknown, State> {
 
     // Configure IPC listeners
     ipcRenderer.on('get-activity-from-file-result', this.getActivityFromFileResult);
+    ipcRenderer.on('find-segments-on-activity-completed', this.findSegmentsOnActivityCompleted);
 
     if (this.user.userId !== undefined) {
       this.bikes = await this.database.getBikes(this.user.userId);
@@ -58,10 +60,15 @@ class UploadActivity extends React.Component<unknown, State> {
 
   componentWillUnmount(): void {
     ipcRenderer.off('get-activity-from-file-result', this.getActivityFromFileResult);
+    ipcRenderer.off('find-segments-on-activity-completed', this.findSegmentsOnActivityCompleted);
   }
 
   getActivityFromFileResult(_event: Electron.IpcRendererEvent, activity: Activity): void {
     this.setState({ activity });
+  }
+
+  findSegmentsOnActivityCompleted(): void {
+    this.setState({ redirectToActivity: true });
   }
 
   async promptUserToSelectFiles(): Promise<void> {
@@ -96,9 +103,9 @@ class UploadActivity extends React.Component<unknown, State> {
     activity.bikeId = Number((document.getElementById('bike-select') as HTMLSelectElement).value);
     activity.description = (document.getElementById('description-input') as HTMLTextAreaElement).value;
     const result = await this.database.saveActivity(activity);
+    await ipcRenderer.send('find-segments-on-activity', result);
     if (result.activityId !== undefined) {
       this.activityId = result.activityId;
-      this.setState({ redirectToActivity: true });
     }
   }
 
