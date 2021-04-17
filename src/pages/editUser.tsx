@@ -1,5 +1,7 @@
 import React from 'react';
 import { Redirect } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
+import { Modal } from 'bootstrap';
 import Database from '../common/database';
 import UserContext, { UserContextType } from '../common/userContext';
 import Navbar from '../components/navbar';
@@ -25,6 +27,10 @@ class EditUser extends React.Component<unknown, State> {
 
   user: User;
 
+  modalId = uuidv4();
+
+  modal: Modal | undefined;
+
   constructor(props: unknown, context: UserContextType) {
     super(props);
     this.database = Database.getDatabaseInstance();
@@ -43,6 +49,13 @@ class EditUser extends React.Component<unknown, State> {
     this.heartRateZoneConfigurationChanged = this.heartRateZoneConfigurationChanged.bind(this);
     this.bikesUpdated = this.bikesUpdated.bind(this);
     this.saveUser = this.saveUser.bind(this);
+  }
+
+  componentDidMount(): void {
+    const modalElement = document.getElementById(this.modalId);
+    if (modalElement !== null) {
+      this.modal = new Modal(modalElement);
+    }
   }
 
   powerZoneConfigurationChanged(): void {
@@ -126,6 +139,18 @@ class EditUser extends React.Component<unknown, State> {
     context.setUser(user);
 
     this.setState({ redirectTo: '/Dashboard' });
+  }
+
+  async deleteUser(): Promise<void> {
+    if (this.user.userId === undefined) {
+      return;
+    }
+    await this.database.deleteSegmentsForUser(this.user.userId);
+    await this.database.deleteActivitiesForUser(this.user.userId);
+    await this.database.deleteUserBikes(this.user.userId);
+    await this.database.deleteUser(this.user.userId);
+    this.modal?.hide();
+    this.setState({ redirectTo: '/' });
   }
 
   render(): JSX.Element {
@@ -352,8 +377,34 @@ class EditUser extends React.Component<unknown, State> {
             <button type="button" className="btn btn-outline-secondary mt-5" onClick={() => this.setState({ redirectTo: '/Dashboard' })}>
               Cancel
             </button>
+            &nbsp;
+            <button type="button" className="btn btn-danger mt-5" onClick={() => this.modal?.show()}>
+              Delete User
+            </button>
           </div>
         </form>
+        {/* Confirm delete modal */}
+        <div className="modal fade" id={this.modalId} tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Delete User</h5>
+                <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" />
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this user?</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => this.deleteUser()}>
+                  Yes
+                </button>
+                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

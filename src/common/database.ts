@@ -73,6 +73,10 @@ export default class Database extends Dexie {
     }
     throw new Error('An error occured when saving User.');
   }
+
+  public async deleteUser(userId: number): Promise<void> {
+    await this.users.delete(userId);
+  }
   // #endregion
 
   // #region Bikes
@@ -88,6 +92,10 @@ export default class Database extends Dexie {
 
   public async getBikes(userId: number): Promise<Bike[]> {
     return this.bikes.where('userId').equals(userId).toArray();
+  }
+
+  public async deleteUserBikes(userId: number): Promise<void> {
+    await this.bikes.where('userId').equals(userId).delete();
   }
   // #endregion
 
@@ -135,6 +143,10 @@ export default class Database extends Dexie {
   public async deleteActivity(activityId: number): Promise<void> {
     await this.activities.delete(activityId);
   }
+
+  public async deleteActivitiesForUser(userId: number): Promise<void> {
+    await this.activities.where('userId').equals(userId).delete();
+  }
   // #endregion
 
   // #region Segments
@@ -172,6 +184,18 @@ export default class Database extends Dexie {
 
   public async deleteSegment(segmentId: number): Promise<void> {
     await this.segments.delete(segmentId);
+  }
+
+  public async deleteSegmentsForUser(userId: number): Promise<void> {
+    const allSegments = await this.getAllSegments(userId);
+    for (let i = 0; i < allSegments.length; i += 1) {
+      const { segmentId } = allSegments[i];
+      if (segmentId !== undefined) {
+        // eslint-disable-next-line no-await-in-loop
+        await this.deleteSegmentResults(segmentId);
+      }
+    }
+    await this.segments.where('userId').equals(userId).delete();
   }
   // #endregion
 
