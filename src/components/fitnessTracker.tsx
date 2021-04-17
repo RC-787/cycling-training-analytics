@@ -23,18 +23,19 @@ function getChartOptions(
     const tssDataForDate = tssDetails.find((x) => startOfDay(x.date).getTime() === allDates[i].getTime());
     const tss = tssDataForDate?.tss ?? 0;
 
-    // CTL = yesterday’s CTL + (today’s TSS - yesterday’s CTL)/42
+    // CTL = ctlYesterday + (tssToday - ctlYesterday) / 42
     const ctlYesterday = i > 0 ? ctlData[i - 1] : 0;
     const ctl = ctlYesterday + (tss - ctlYesterday) / 42;
-    ctlData.push(Number(ctl.toFixed(1)));
+    ctlData.push(ctl);
 
-    // ATL = yesterday’s ATL + (today’s TSS - yesterday’s ATL)/7
+    // ATL = atlYesterday + (tssToday - atlYesterday) / 7
     const atlYesterday = i > 0 ? atlData[i - 1] : 0;
     const atl = atlYesterday + (tss - atlYesterday) / 7;
-    atlData.push(Number(atl.toFixed(1)));
+    atlData.push(atl);
 
     // TSB = CTL yesterday - ATL yesterday
-    tsbData.push(Number((ctlYesterday - atlYesterday).toFixed(1)));
+    const tsb = ctlYesterday - atlYesterday;
+    tsbData.push(tsb);
   }
 
   return {
@@ -60,18 +61,21 @@ function getChartOptions(
         tooltipText += `<span class="d-table-cell w-100 text-center fw-bold">${date.toLocaleDateString(dateFormat)}</span>`;
         tooltipText += `</li>`;
         if (ctlSeries !== undefined) {
+          const ctl = ctlSeries.value as number;
           tooltipText += `<li class="performance-analysis-tooltip-list"><span class="d-table-cell pe-5">${ctlSeries.marker} CTL</span>`;
-          tooltipText += `<span class="d-table-cell w-100 text-end fw-bold">${ctlSeries.value}</span>`;
+          tooltipText += `<span class="d-table-cell w-100 text-end fw-bold">${ctl.toFixed(2)}</span>`;
           tooltipText += `</li>`;
         }
         if (atlSeries !== undefined) {
+          const atl = atlSeries.value as number;
           tooltipText += `<li class="performance-analysis-tooltip-list"><span class="d-table-cell pe-5">${atlSeries.marker} ATL</span>`;
-          tooltipText += `<span class="d-table-cell w-100 text-end fw-bold">${atlSeries.value}</span>`;
+          tooltipText += `<span class="d-table-cell w-100 text-end fw-bold">${atl.toFixed(2)}</span>`;
           tooltipText += `</li>`;
         }
         if (tsbSeries !== undefined) {
+          const tsb = tsbSeries.value as number;
           tooltipText += `<li class="performance-analysis-tooltip-list"><span class="d-table-cell pe-5">${tsbSeries.marker} TSB</span>`;
-          tooltipText += `<span class="d-table-cell w-100 text-end fw-bold">${tsbSeries.value}</span>`;
+          tooltipText += `<span class="d-table-cell w-100 text-end fw-bold">${tsb.toFixed(2)}</span>`;
           tooltipText += `</li>`;
         }
 
