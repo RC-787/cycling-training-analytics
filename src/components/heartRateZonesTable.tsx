@@ -7,7 +7,7 @@ type Props = {
   heartRateZoneSystem: string;
 };
 
-export default function HeartRateZonesTable(props: Props): JSX.Element {
+export default function heartRateZonesTable(props: Props): JSX.Element {
   const { lthr, heartRateZoneSystem } = props;
   const zones = ZoneCalculator.getHeartRateZones(lthr, heartRateZoneSystem);
 

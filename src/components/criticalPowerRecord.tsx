@@ -22,6 +22,8 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
 
   timeRangeDropdownId: string;
 
+  componentIsMounted = false;
+
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -34,13 +36,17 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
   }
 
   async componentDidMount(): Promise<void> {
-    const { props, state } = this;
-    if (props.user.userId === undefined) {
+    this.componentIsMounted = true;
+
+    const { user } = this.props;
+    const { timeRange } = this.state;
+
+    if (user.userId === undefined) {
       return;
     }
 
-    const startAndEndDate = UnitConverter.getStartAndEndDate(state.timeRange, props.user.firstDayOfWeek);
-    const activities = await this.database.getActivitiesByDateRange(props.user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
+    const startAndEndDate = UnitConverter.getStartAndEndDate(timeRange, user.firstDayOfWeek);
+    const activities = await this.database.getActivitiesByDateRange(user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
 
     const criticalPowerData: Array<[number, number, Date]> = []; // seconds, power, date
     for (let i = 0; i < activities.length; i += 1) {
@@ -56,118 +62,13 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
       }
     }
 
-    this.setState({ isLoading: false, dataFoundForSelectedTimeRange: criticalPowerData.length > 0 }, () => {
-      const chartContainer = document.getElementById('critical-power-record-chart-container');
-      if (chartContainer === null) {
-        return;
-      }
-      this.chart = echarts.init(chartContainer);
-      this.chart.setOption({
-        tooltip: {
-          show: true,
-          trigger: 'axis',
-          transitionDuration: 0,
-          formatter(params: unknown) {
-            const detail = (params as Array<unknown>)[0];
-            const data = (detail as Record<string, unknown>).data as Array<[number, number, Date]>[0];
-            const timeInSeconds = data[0];
-            const power = data[1];
-            const date = data[2];
-            return `${UnitConverter.convertSecondsToHHmmss(timeInSeconds)}<br>${power} W<br>${date.toLocaleDateString(props.user.dateFormat)}`;
-          },
-        },
-        grid: {
-          top: 25,
-          left: 35,
-          right: 10,
-          bottom: 5,
-        },
-        xAxis: {
-          type: 'log',
-          maxInterval: 1,
-          min: 1,
-          max: 'dataMax',
-          axisLabel: {
-            show: false,
-          },
-          axisTick: {
-            show: false,
-          },
-          splitLine: {
-            show: false,
-          },
-        },
-        yAxis: {
-          type: 'value',
-          min: 'dataMin',
-          boundaryGap: false,
-          splitLine: {
-            show: true,
-            lineStyle: {
-              color: '#333',
-            },
-          },
-        },
-        series: [
-          {
-            data: criticalPowerData,
-            type: 'line',
-            name: 'Power',
-            symbol: 'none',
-            lineStyle: {
-              color: 'rgb(0, 0, 255)',
-              width: 2,
-            },
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                {
-                  offset: 0,
-                  color: 'rgb(0, 0, 255)',
-                },
-                {
-                  offset: 1,
-                  color: 'rgb(102, 102, 255)',
-                },
-              ]),
-            },
-          },
-        ],
-      });
-    });
-  }
-
-  async timeRangeChanged(timeRange: string): Promise<void> {
-    const { props, state } = this;
-    if (state.timeRange === timeRange || props.user.userId === undefined) {
-      return;
-    }
-
-    const startAndEndDate = UnitConverter.getStartAndEndDate(timeRange, props.user.firstDayOfWeek);
-    const activities = await this.database.getActivitiesByDateRange(props.user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
-
-    const criticalPowerData: Array<[number, number, Date]> = []; // seconds, power, date
-    for (let i = 0; i < activities.length; i += 1) {
-      const criticalPowerForActivity = activities[i].criticalPowerData;
-      if (criticalPowerForActivity !== undefined) {
-        for (let j = 0; j < criticalPowerForActivity.length; j += 1) {
-          if (criticalPowerData.length < j + 1) {
-            criticalPowerData.push([j + 1, criticalPowerForActivity[j].value, activities[i].date]);
-          } else if (criticalPowerData[j][1] < criticalPowerForActivity[j].value) {
-            criticalPowerData[j] = [j + 1, criticalPowerForActivity[j].value, activities[i].date];
-          }
+    if (this.componentIsMounted) {
+      this.setState({ isLoading: false, dataFoundForSelectedTimeRange: criticalPowerData.length > 0 }, () => {
+        const chartContainer = document.getElementById('critical-power-record-chart-container');
+        if (chartContainer === null) {
+          return;
         }
-      }
-    }
-
-    this.setState({ dataFoundForSelectedTimeRange: criticalPowerData.length > 0, timeRange }, () => {
-      const chartContainer = document.getElementById('critical-power-record-chart-container');
-      if (chartContainer === null) {
-        return;
-      }
-      if (!echarts.getInstanceByDom(chartContainer)) {
         this.chart = echarts.init(chartContainer);
-      }
-      if (this.chart !== undefined) {
         this.chart.setOption({
           tooltip: {
             show: true,
@@ -179,7 +80,7 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
               const timeInSeconds = data[0];
               const power = data[1];
               const date = data[2];
-              return `${UnitConverter.convertSecondsToHHmmss(timeInSeconds)}<br>${power} W<br>${date.toLocaleDateString(props.user.dateFormat)}`;
+              return `${UnitConverter.convertSecondsToHHmmss(timeInSeconds)}<br>${power} W<br>${date.toLocaleDateString(user.dateFormat)}`;
             },
           },
           grid: {
@@ -239,12 +140,140 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
             },
           ],
         });
+      });
+    }
+  }
+
+  componentWillUnmount(): void {
+    this.componentIsMounted = false;
+  }
+
+  async timeRangeChanged(updatedTimeRange: string): Promise<void> {
+    const { user } = this.props;
+    const { timeRange } = this.state;
+    if (timeRange === updatedTimeRange || user.userId === undefined) {
+      return;
+    }
+
+    const startAndEndDate = UnitConverter.getStartAndEndDate(updatedTimeRange, user.firstDayOfWeek);
+    const activities = await this.database.getActivitiesByDateRange(user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
+
+    const criticalPowerData: Array<[number, number, Date]> = []; // seconds, power, date
+    for (let i = 0; i < activities.length; i += 1) {
+      const criticalPowerForActivity = activities[i].criticalPowerData;
+      if (criticalPowerForActivity !== undefined) {
+        for (let j = 0; j < criticalPowerForActivity.length; j += 1) {
+          if (criticalPowerData.length < j + 1) {
+            criticalPowerData.push([j + 1, criticalPowerForActivity[j].value, activities[i].date]);
+          } else if (criticalPowerData[j][1] < criticalPowerForActivity[j].value) {
+            criticalPowerData[j] = [j + 1, criticalPowerForActivity[j].value, activities[i].date];
+          }
+        }
       }
-    });
+    }
+
+    if (this.componentIsMounted) {
+      this.setState({ dataFoundForSelectedTimeRange: criticalPowerData.length > 0, timeRange: updatedTimeRange }, () => {
+        const chartContainer = document.getElementById('critical-power-record-chart-container');
+        if (chartContainer === null) {
+          return;
+        }
+        if (!echarts.getInstanceByDom(chartContainer)) {
+          this.chart = echarts.init(chartContainer);
+        }
+        if (this.chart !== undefined) {
+          this.chart.setOption({
+            tooltip: {
+              show: true,
+              trigger: 'axis',
+              transitionDuration: 0,
+              formatter(params: unknown) {
+                const detail = (params as Array<unknown>)[0];
+                const data = (detail as Record<string, unknown>).data as Array<[number, number, Date]>[0];
+                const timeInSeconds = data[0];
+                const power = data[1];
+                const date = data[2];
+                return `${UnitConverter.convertSecondsToHHmmss(timeInSeconds)}<br>${power} W<br>${date.toLocaleDateString(user.dateFormat)}`;
+              },
+            },
+            grid: {
+              top: 25,
+              left: 35,
+              right: 10,
+              bottom: 5,
+            },
+            xAxis: {
+              type: 'log',
+              maxInterval: 1,
+              min: 1,
+              max: 'dataMax',
+              axisLabel: {
+                show: false,
+              },
+              axisTick: {
+                show: false,
+              },
+              splitLine: {
+                show: false,
+              },
+            },
+            yAxis: {
+              type: 'value',
+              min: 'dataMin',
+              boundaryGap: false,
+              splitLine: {
+                show: true,
+                lineStyle: {
+                  color: '#333',
+                },
+              },
+            },
+            series: [
+              {
+                data: criticalPowerData,
+                type: 'line',
+                name: 'Power',
+                symbol: 'none',
+                lineStyle: {
+                  color: 'rgb(0, 0, 255)',
+                  width: 2,
+                },
+                areaStyle: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    {
+                      offset: 0,
+                      color: 'rgb(0, 0, 255)',
+                    },
+                    {
+                      offset: 1,
+                      color: 'rgb(102, 102, 255)',
+                    },
+                  ]),
+                },
+              },
+            ],
+          });
+        }
+      });
+    }
   }
 
   render(): JSX.Element {
-    const { state } = this;
+    const { timeRange, isLoading, dataFoundForSelectedTimeRange } = this.state;
+
+    if (isLoading) {
+      return (
+        <div className="noselect text-center component p-3">
+          <span className="fs-3 fw-light">Critical Power</span>
+          <br />
+          <div className="d-flex justify-content-center">
+            <div className="spinner-border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="component p-3 h-100">
@@ -257,7 +286,7 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              {state.timeRange}
+              {timeRange}
             </button>
             <ul className="dropdown-menu dropdown-menu-dark" aria-labelledby={this.timeRangeDropdownId}>
               <li aria-hidden onClick={() => this.timeRangeChanged('Current Year')}>
@@ -290,12 +319,9 @@ export default class CriticalPowerRecord extends React.Component<Props, State> {
         <div className="text-center">
           <span className="fs-3 fw-light">Critical Power</span>
           <br />
-          {state.isLoading && <span className="fs-5 fw-light">Loading Critical Power data...</span>}
-          {!state.isLoading && !state.dataFoundForSelectedTimeRange && (
-            <span className="fs-5 fw-light">No data found for the selected time range.</span>
-          )}
+          {!dataFoundForSelectedTimeRange && <span className="fs-5 fw-light">No data found for the selected time range.</span>}
         </div>
-        {!state.isLoading && state.dataFoundForSelectedTimeRange && <div id="critical-power-record-chart-container" style={{ minHeight: '300px' }} />}
+        {dataFoundForSelectedTimeRange && <div id="critical-power-record-chart-container" style={{ minHeight: '300px' }} />}
       </div>
     );
   }

@@ -9,9 +9,9 @@ type Props = {
 
 export default class ActivityCriticalPower extends React.Component<Props> {
   componentDidMount(): void {
-    const { props } = this;
+    const { activity } = this.props;
     const chartContainer = document.getElementById('critical-power-chart-container');
-    if (chartContainer === null || props.activity.criticalPowerData === undefined) {
+    if (chartContainer === null || activity.criticalPowerData === undefined) {
       return;
     }
 
@@ -61,7 +61,7 @@ export default class ActivityCriticalPower extends React.Component<Props> {
       },
       series: [
         {
-          data: props.activity.criticalPowerData.map((x) => [x.durationInSeconds, x.value]),
+          data: activity.criticalPowerData.map((x) => [x.durationInSeconds, x.value]),
           type: 'line',
           name: 'Power',
           symbol: 'none',

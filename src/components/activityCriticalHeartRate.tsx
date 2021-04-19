@@ -9,9 +9,9 @@ type Props = {
 
 export default class CriticalHeartRate extends React.Component<Props> {
   componentDidMount(): void {
-    const { props } = this;
+    const { activity } = this.props;
     const chartContainer = document.getElementById('critical-heart-rate-chart-container');
-    if (chartContainer === null || props.activity.criticalHeartRateData === undefined) {
+    if (chartContainer === null || activity.criticalHeartRateData === undefined) {
       return;
     }
 
@@ -66,7 +66,7 @@ export default class CriticalHeartRate extends React.Component<Props> {
       },
       series: [
         {
-          data: props.activity.criticalHeartRateData.map((x) => [x.durationInSeconds, x.value]),
+          data: activity.criticalHeartRateData.map((x) => [x.durationInSeconds, x.value]),
           type: 'line',
           symbol: 'none',
           lineStyle: {

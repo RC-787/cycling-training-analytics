@@ -142,6 +142,7 @@ type Props = {
 };
 
 type State = {
+  isLoading: boolean;
   numberOfActivitiesWithTssData: number;
   timeRange: string;
 };
@@ -153,9 +154,12 @@ export default class FitnessTracker extends React.Component<Props, State> {
 
   timeRangeDropdownId: string;
 
+  componentIsMounted = false;
+
   constructor(props: Props) {
     super(props);
     this.state = {
+      isLoading: true,
       numberOfActivitiesWithTssData: 0,
       timeRange: 'Current Year',
     };
@@ -164,62 +168,89 @@ export default class FitnessTracker extends React.Component<Props, State> {
   }
 
   async componentDidMount(): Promise<void> {
-    const { props, state } = this;
-    if (props.user.userId === undefined) {
+    this.componentIsMounted = true;
+
+    const { user } = this.props;
+    const { timeRange } = this.state;
+
+    if (user.userId === undefined) {
       return;
     }
 
-    const startAndEndDate = UnitConverter.getStartAndEndDate(state.timeRange, props.user.firstDayOfWeek);
-    const activities = await this.database.getActivitiesByDateRange(props.user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
-    this.setState({ numberOfActivitiesWithTssData: activities.length }, () => {
-      const chartContainer = document.getElementById('fitness-tracker-chart-container');
-      if (chartContainer === null) {
-        return;
-      }
-
-      const tssDetails: Array<{ tss: number; date: Date }> = [];
-      activities.forEach((activity) => {
-        if (activity.tss !== undefined) {
-          tssDetails.push({ tss: activity.tss, date: activity.date });
+    const startAndEndDate = UnitConverter.getStartAndEndDate(timeRange, user.firstDayOfWeek);
+    const activities = await this.database.getActivitiesByDateRange(user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
+    if (this.componentIsMounted) {
+      this.setState({ isLoading: false, numberOfActivitiesWithTssData: activities.length }, () => {
+        const chartContainer = document.getElementById('fitness-tracker-chart-container');
+        if (chartContainer === null) {
+          return;
         }
-      });
 
-      this.chart = echarts.init(chartContainer);
-      this.chart.setOption(getChartOptions(startAndEndDate.startDate, startAndEndDate.endDate, tssDetails, props.user.dateFormat));
-    });
+        const tssDetails: Array<{ tss: number; date: Date }> = [];
+        activities.forEach((activity) => {
+          if (activity.tss !== undefined) {
+            tssDetails.push({ tss: activity.tss, date: activity.date });
+          }
+        });
+
+        this.chart = echarts.init(chartContainer);
+        this.chart.setOption(getChartOptions(startAndEndDate.startDate, startAndEndDate.endDate, tssDetails, user.dateFormat));
+      });
+    }
   }
 
-  async timeRangeChanged(timeRange: string): Promise<void> {
-    const { props, state } = this;
-    if (state.timeRange === timeRange || props.user.userId === undefined) {
+  componentWillUnmount(): void {
+    this.componentIsMounted = false;
+  }
+
+  async timeRangeChanged(updatedTimeRange: string): Promise<void> {
+    const { user } = this.props;
+    const { timeRange } = this.state;
+    if (timeRange === updatedTimeRange || user.userId === undefined) {
       return;
     }
 
-    const startAndEndDate = UnitConverter.getStartAndEndDate(timeRange, props.user.firstDayOfWeek);
-    const activities = await this.database.getActivitiesByDateRange(props.user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
-    this.setState({ numberOfActivitiesWithTssData: activities.length, timeRange }, () => {
-      const tssDetails: Array<{ tss: number; date: Date }> = [];
-      activities.forEach((activity) => {
-        if (activity.tss !== undefined) {
-          tssDetails.push({ tss: activity.tss, date: activity.date });
+    const startAndEndDate = UnitConverter.getStartAndEndDate(updatedTimeRange, user.firstDayOfWeek);
+    const activities = await this.database.getActivitiesByDateRange(user.userId, startAndEndDate.startDate, startAndEndDate.endDate);
+    if (this.componentIsMounted) {
+      this.setState({ numberOfActivitiesWithTssData: activities.length, timeRange: updatedTimeRange }, () => {
+        const tssDetails: Array<{ tss: number; date: Date }> = [];
+        activities.forEach((activity) => {
+          if (activity.tss !== undefined) {
+            tssDetails.push({ tss: activity.tss, date: activity.date });
+          }
+        });
+
+        const chartContainer = document.getElementById('fitness-tracker-chart-container');
+        if (chartContainer === null) {
+          return;
+        }
+        if (!echarts.getInstanceByDom(chartContainer)) {
+          this.chart = echarts.init(chartContainer);
+        }
+        if (this.chart !== undefined) {
+          this.chart.setOption(getChartOptions(startAndEndDate.startDate, startAndEndDate.endDate, tssDetails, user.dateFormat));
         }
       });
-
-      const chartContainer = document.getElementById('fitness-tracker-chart-container');
-      if (chartContainer === null) {
-        return;
-      }
-      if (!echarts.getInstanceByDom(chartContainer)) {
-        this.chart = echarts.init(chartContainer);
-      }
-      if (this.chart !== undefined) {
-        this.chart.setOption(getChartOptions(startAndEndDate.startDate, startAndEndDate.endDate, tssDetails, props.user.dateFormat));
-      }
-    });
+    }
   }
 
   render(): JSX.Element {
-    const { state } = this;
+    const { timeRange, isLoading, numberOfActivitiesWithTssData } = this.state;
+
+    if (isLoading) {
+      return (
+        <div className="noselect text-center component p-3">
+          <span className="fs-3 fw-light">Fitness Tracker</span>
+          <br />
+          <div className="d-flex justify-content-center">
+            <div className="spinner-border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="noselect text-center component p-3">
@@ -232,7 +263,7 @@ export default class FitnessTracker extends React.Component<Props, State> {
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              {state.timeRange}
+              {timeRange}
             </button>
             <ul className="dropdown-menu dropdown-menu-dark" aria-labelledby={this.timeRangeDropdownId}>
               <li aria-hidden onClick={() => this.timeRangeChanged('Current Year')}>
@@ -263,13 +294,13 @@ export default class FitnessTracker extends React.Component<Props, State> {
           </div>
         </div>
         <span className="fs-3 fw-light">Fitness Tracker</span>
-        {state.numberOfActivitiesWithTssData === 0 && (
+        {numberOfActivitiesWithTssData === 0 && (
           <span className="fs-5 fw-light">
             <br />
             No activities found in the selected time range.
           </span>
         )}
-        {state.numberOfActivitiesWithTssData > 0 && (
+        {numberOfActivitiesWithTssData > 0 && (
           <div id="fitness-tracker-chart-container" className="col-12" style={{ minHeight: '300px', overflowX: 'hidden' }} />
         )}
       </div>

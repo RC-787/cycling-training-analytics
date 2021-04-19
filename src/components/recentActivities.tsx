@@ -1,5 +1,6 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react';
+import { Redirect } from 'react-router-dom';
 import Slider, { LazyLoadTypes } from 'react-slick';
 import { v4 as uuidv4 } from 'uuid';
 import Database from '../common/database';
@@ -13,6 +14,7 @@ type Props = {
 };
 
 type State = {
+  redirectToActivity: boolean;
   totalActivityCount: number | undefined;
   activities: Activity[];
 };
@@ -22,9 +24,12 @@ export default class ActivityCarousel extends React.Component<Props, State> {
 
   database: Database;
 
+  activityId: number | undefined;
+
   constructor(props: Props) {
     super(props);
     this.state = {
+      redirectToActivity: false,
       totalActivityCount: undefined,
       activities: [],
     };
@@ -42,7 +47,19 @@ export default class ActivityCarousel extends React.Component<Props, State> {
   }
 
   render(): JSX.Element {
-    const { totalActivityCount, activities } = this.state;
+    const { totalActivityCount, activities, redirectToActivity } = this.state;
+
+    if (redirectToActivity) {
+      return (
+        <Redirect
+          to={{
+            pathname: '/activity',
+            state: { activityId: this.activityId },
+          }}
+        />
+      );
+    }
+
     if (totalActivityCount === undefined) {
       return (
         <div className="noselect text-center component p-3">
@@ -98,7 +115,17 @@ export default class ActivityCarousel extends React.Component<Props, State> {
           {activities.map((activity) => {
             return (
               <div key={uuidv4()}>
-                <div className="card border-secondary component-background component-text mx-auto" style={{ width: '90%' }}>
+                <div
+                  className="card border-secondary component-background component-text mx-auto"
+                  role="button"
+                  tabIndex={-1}
+                  aria-hidden
+                  onClick={() => {
+                    this.activityId = activity.activityId;
+                    this.setState({ redirectToActivity: true });
+                  }}
+                  style={{ width: '90%', cursor: 'pointer' }}
+                >
                   <div className="card-body" style={{ minHeight: '200px' }}>
                     <h5 className="card-title">{activity.title}</h5>
                     <div className="activity-carousel-item-map">

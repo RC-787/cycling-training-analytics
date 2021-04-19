@@ -41,6 +41,8 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
 
   confirmDeleteModal: Modal | undefined;
 
+  componentIsMounted = false;
+
   constructor(props: RouteComponentProps<LocationState>, context: UserContextType) {
     super(props);
     this.state = {
@@ -57,17 +59,25 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
   }
 
   async componentDidMount(): Promise<void> {
+    this.componentIsMounted = true;
+
     const activity = await this.database.getActivity(this.activityId);
-    this.setState({ activity }, () => {
-      let modalElement = document.getElementById(this.editActivityModalId);
-      if (modalElement !== null) {
-        this.editActivityModal = new Modal(modalElement);
-      }
-      modalElement = document.getElementById(this.confirmDeleteModalId);
-      if (modalElement !== null) {
-        this.confirmDeleteModal = new Modal(modalElement);
-      }
-    });
+    if (this.componentIsMounted) {
+      this.setState({ activity }, () => {
+        let modalElement = document.getElementById(this.editActivityModalId);
+        if (modalElement !== null) {
+          this.editActivityModal = new Modal(modalElement);
+        }
+        modalElement = document.getElementById(this.confirmDeleteModalId);
+        if (modalElement !== null) {
+          this.confirmDeleteModal = new Modal(modalElement);
+        }
+      });
+    }
+  }
+
+  componentWillUnmount(): void {
+    this.componentIsMounted = false;
   }
 
   async saveLapCallback(lapToSave: { startIndex: number; endIndex: number }): Promise<void> {
@@ -78,7 +88,9 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
     activity.laps.push(lapToSave);
     activity.laps.sort((a, b) => a.startIndex - b.startIndex);
     await this.database.saveActivity(activity);
-    this.setState({ activity });
+    if (this.componentIsMounted) {
+      this.setState({ activity });
+    }
   }
 
   async deleteLapCallback(lapToDelete: { startIndex: number; endIndex: number }): Promise<void> {
@@ -88,7 +100,9 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
     }
     activity.laps = activity?.laps.filter((x) => x.startIndex !== lapToDelete.startIndex && x.endIndex !== lapToDelete.endIndex);
     await this.database.saveActivity(activity);
-    this.setState({ activity });
+    if (this.componentIsMounted) {
+      this.setState({ activity });
+    }
   }
 
   showEditActivityModal(): void {
@@ -104,7 +118,9 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
 
     activity.title = (titleInputElement as HTMLInputElement).value;
     await this.database.saveActivity(activity);
-    this.setState({ activity });
+    if (this.componentIsMounted) {
+      this.setState({ activity });
+    }
     this.editActivityModal?.hide();
   }
 
@@ -115,7 +131,9 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
       this.database.deleteActivitySegmentResults(activity.activityId);
       this.editActivityModal?.hide();
       this.confirmDeleteModal?.hide();
-      this.setState({ redirectTo: '/Dashboard' });
+      if (this.componentIsMounted) {
+        this.setState({ redirectTo: '/Dashboard' });
+      }
     }
   }
 
@@ -127,7 +145,17 @@ class ActivityPage extends React.Component<RouteComponentProps, State> {
     }
 
     if (state.activity === undefined) {
-      return <h1>Loading</h1>;
+      return (
+        <div className="noselect text-center component p-3">
+          <span className="fs-3 fw-light">Activity Details</span>
+          <br />
+          <div className="d-flex justify-content-center">
+            <div className="spinner-border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     return (

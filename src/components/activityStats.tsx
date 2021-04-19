@@ -21,19 +21,20 @@ export default class ActivityStats extends React.Component<Props, State> {
   }
 
   render(): JSX.Element {
-    const { props, state } = this;
+    const { editActivity } = this.state;
+    const { activity, user } = this.props;
 
-    if (state.editActivity) {
+    if (editActivity) {
       return <h1>Edit Activity</h1>;
     }
 
     let averageSpeed = 'N/A';
-    if (props.activity.averageSpeedInKilometersPerHour !== undefined) {
-      averageSpeed = UnitConverter.convertMetersToUnit(props.activity.averageSpeedInKilometersPerHour * 1000, props.user.distanceUnit);
+    if (activity.averageSpeedInKilometersPerHour !== undefined) {
+      averageSpeed = UnitConverter.convertMetersToUnit(activity.averageSpeedInKilometersPerHour * 1000, user.distanceUnit);
     }
     let maxSpeed = 'N/A';
-    if (props.activity.maxSpeedInKilometersPerHour !== undefined) {
-      maxSpeed = UnitConverter.convertMetersToUnit(props.activity.maxSpeedInKilometersPerHour * 1000, props.user.distanceUnit);
+    if (activity.maxSpeedInKilometersPerHour !== undefined) {
+      maxSpeed = UnitConverter.convertMetersToUnit(activity.maxSpeedInKilometersPerHour * 1000, user.distanceUnit);
     }
 
     return (
@@ -43,17 +44,17 @@ export default class ActivityStats extends React.Component<Props, State> {
             <tr>
               <td>Duration: </td>
               <td className="text-start" colSpan={2}>
-                {UnitConverter.convertSecondsToHHmmss(props.activity.durationInSeconds)}
+                {UnitConverter.convertSecondsToHHmmss(activity.durationInSeconds)}
               </td>
             </tr>
             <tr>
-              <td>Distance ({props.user.distanceUnit}):</td>
+              <td>Distance ({user.distanceUnit}):</td>
               <td className="text-start" colSpan={2}>
-                {UnitConverter.convertMetersToUnit(props.activity.distanceInMeters, props.user.distanceUnit)}
+                {UnitConverter.convertMetersToUnit(activity.distanceInMeters, user.distanceUnit)}
               </td>
             </tr>
             <tr>
-              <td>Speed ({props.user.distanceUnit}/h):</td>
+              <td>Speed ({user.distanceUnit}/h):</td>
               <td className="text-start">
                 <sub>AVG </sub>
                 {averageSpeed}
@@ -67,45 +68,45 @@ export default class ActivityStats extends React.Component<Props, State> {
               <td>Power (W):</td>
               <td className="text-start">
                 <sub>AVG </sub>
-                {props.activity.averagePower ?? 'N/A'}
+                {activity.averagePower ?? 'N/A'}
               </td>
               <td className="text-start">
                 <sub>MAX </sub>
-                {props.activity.maxPower ?? 'N/A'}
+                {activity.maxPower ?? 'N/A'}
               </td>
             </tr>
             <tr>
               <td>Heart Rate (bpm):</td>
               <td className="text-start">
                 <sub>AVG </sub>
-                {props.activity.averageHeartRate ?? 'N/A'}
+                {activity.averageHeartRate ?? 'N/A'}
               </td>
               <td className="text-start">
                 <sub>MAX </sub>
-                {props.activity.maxHeartRate ?? 'N/A'}
+                {activity.maxHeartRate ?? 'N/A'}
               </td>
             </tr>
             <tr>
               <td>Cadence (rpm):</td>
               <td className="text-start">
                 <sub>AVG </sub>
-                {props.activity.averageCadence ?? 'N/A'}
+                {activity.averageCadence ?? 'N/A'}
               </td>
               <td className="text-start">
                 <sub>MAX </sub>
-                {props.activity.maxCadence ?? 'N/A'}
+                {activity.maxCadence ?? 'N/A'}
               </td>
             </tr>
             <tr>
               <td>TSS: </td>
               <td className="text-start" colSpan={2}>
-                {props.activity.tss ?? 'N/A'}
+                {activity.tss ?? 'N/A'}
               </td>
             </tr>
             <tr>
               <td>IF: </td>
               <td className="text-start" colSpan={2}>
-                {props.activity.intensityFactor?.toFixed(3) ?? 'N/A'}
+                {activity.intensityFactor?.toFixed(3) ?? 'N/A'}
               </td>
             </tr>
           </tbody>

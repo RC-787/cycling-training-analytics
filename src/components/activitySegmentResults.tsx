@@ -21,6 +21,8 @@ export default class ActivitySegmentResults extends React.Component<Props, State
 
   redirectToSegmentId = 0;
 
+  componentIsMounted = false;
+
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -32,21 +34,27 @@ export default class ActivitySegmentResults extends React.Component<Props, State
   }
 
   async componentDidMount(): Promise<void> {
-    const { props } = this;
-    const activitySegmentResults = await this.database.getActivitySegmentResults(props.activityId);
-    this.setState({ activitySegmentResults });
+    this.componentIsMounted = true;
+    const { activityId } = this.props;
+    const activitySegmentResults = await this.database.getActivitySegmentResults(activityId);
+    if (this.componentIsMounted) {
+      this.setState({ activitySegmentResults });
+    }
 
     ipcRenderer.on('segment-processing-completed', this.getActivitySegmentResults);
   }
 
   componentWillUnmount(): void {
+    this.componentIsMounted = false;
     ipcRenderer.off('segment-processing-completed', this.getActivitySegmentResults);
   }
 
   async getActivitySegmentResults(): Promise<void> {
-    const { props } = this;
-    const activitySegmentResults = await this.database.getActivitySegmentResults(props.activityId);
-    this.setState({ activitySegmentResults });
+    const { activityId } = this.props;
+    const activitySegmentResults = await this.database.getActivitySegmentResults(activityId);
+    if (this.componentIsMounted) {
+      this.setState({ activitySegmentResults });
+    }
   }
 
   redirectToSegment(segmentId: number): void {
@@ -55,9 +63,10 @@ export default class ActivitySegmentResults extends React.Component<Props, State
   }
 
   render(): JSX.Element {
-    const { props, state } = this;
+    const { redirectToSegment, activitySegmentResults } = this.state;
+    const { distanceUnit } = this.props;
 
-    if (state.redirectToSegment) {
+    if (redirectToSegment) {
       return (
         <Redirect
           to={{
@@ -73,12 +82,12 @@ export default class ActivitySegmentResults extends React.Component<Props, State
         <div className="text-center mb-3">
           <span className="fs-3 fw-light">Segment Results</span>
         </div>
-        {state.activitySegmentResults.length === 0 && (
+        {activitySegmentResults.length === 0 && (
           <div className="text-center">
             <span className="fs-5 fw-light">No segment results found for this activity</span>
           </div>
         )}
-        {state.activitySegmentResults.length > 0 && (
+        {activitySegmentResults.length > 0 && (
           <table className="table table-striped table-hover table-sm segment-result-table">
             <thead>
               <tr>
@@ -89,11 +98,11 @@ export default class ActivitySegmentResults extends React.Component<Props, State
                 <th scope="col">Average Power (w)</th>
                 <th scope="col">Average Heart Rate (bpm)</th>
                 <th scope="col">Average Cadence (rpm)</th>
-                <th scope="col">Average Speed ({props.distanceUnit}/h)</th>
+                <th scope="col">Average Speed ({distanceUnit}/h)</th>
               </tr>
             </thead>
             <tbody>
-              {state.activitySegmentResults.map((activitySegmentResult) => {
+              {activitySegmentResults.map((activitySegmentResult) => {
                 return (
                   <tr key={uuidv4()} style={{ cursor: 'pointer' }} onClick={() => this.redirectToSegment(activitySegmentResult.segmentId)}>
                     <td>{activitySegmentResult.segmentName}</td>
@@ -105,7 +114,7 @@ export default class ActivitySegmentResults extends React.Component<Props, State
                     <td>{activitySegmentResult.averageCadence ?? 'N/A'}</td>
                     <td>
                       {activitySegmentResult.averageSpeedInKilometersPerHour !== undefined
-                        ? UnitConverter.convertMetersToUnit(activitySegmentResult.averageSpeedInKilometersPerHour * 1000, props.distanceUnit)
+                        ? UnitConverter.convertMetersToUnit(activitySegmentResult.averageSpeedInKilometersPerHour * 1000, distanceUnit)
                         : 'N/A'}
                     </td>
                   </tr>

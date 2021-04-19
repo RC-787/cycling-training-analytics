@@ -12,18 +12,18 @@ type Props = {
 
 export default class HeartRateZoneDistribution extends React.Component<Props> {
   componentDidMount(): void {
-    const { props } = this;
+    const { activity, user } = this.props;
 
     const data: Array<[number, number, string, string, string, number]> = []; // ZoneNumber, TimeInZone, ZoneName, ZoneStart, ZoneEnd, PercentageTimeInZone
-    const zones = ZoneCalculator.getHeartRateZones(props.user.lthr, props.user.heartRateZoneSystem);
+    const zones = ZoneCalculator.getHeartRateZones(user.lthr, user.heartRateZoneSystem);
     zones.forEach((zone, index) => {
-      if (props.activity.heartRateData === undefined) {
+      if (activity.heartRateData === undefined) {
         return;
       }
 
-      const timeInZone = props.activity.heartRateData.filter((x) => x !== null && x >= zone.startValue && x <= zone.endValue).length;
+      const timeInZone = activity.heartRateData.filter((x) => x !== null && x >= zone.startValue && x <= zone.endValue).length;
       if (timeInZone > 0) {
-        const percentageTimeInZone = Number(((timeInZone * 100) / props.activity.heartRateData.length).toFixed(2));
+        const percentageTimeInZone = Number(((timeInZone * 100) / activity.heartRateData.length).toFixed(2));
         data.push([
           index + 1,
           timeInZone,
@@ -104,9 +104,9 @@ export default class HeartRateZoneDistribution extends React.Component<Props> {
   }
 
   render(): JSX.Element {
-    const { props } = this;
+    const { activity } = this.props;
 
-    if (props.activity.heartRateData === undefined) {
+    if (activity.heartRateData === undefined) {
       return (
         <section className="component p-3 h-100">
           <div className="text-center">

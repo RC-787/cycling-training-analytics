@@ -9,6 +9,7 @@ import Segment from '../types/segment';
 import User from '../types/user';
 
 type State = {
+  isLoading: boolean;
   segments: Array<Segment>;
   redirectToSegment: boolean;
 };
@@ -20,9 +21,12 @@ class SegmentList extends React.Component<unknown, State> {
 
   redirectToSegmentId = 0;
 
+  componentIsMounted = false;
+
   constructor(props: unknown, context: UserContextType) {
     super(props);
     this.state = {
+      isLoading: true,
       segments: [],
       redirectToSegment: false,
     };
@@ -31,11 +35,18 @@ class SegmentList extends React.Component<unknown, State> {
   }
 
   async componentDidMount(): Promise<void> {
+    this.componentIsMounted = true;
     if (this.user.userId === undefined) {
       return;
     }
     const segments = await this.database.getAllSegments(this.user.userId);
-    this.setState({ segments });
+    if (this.componentIsMounted) {
+      this.setState({ isLoading: false, segments });
+    }
+  }
+
+  componentWillUnmount(): void {
+    this.componentIsMounted = false;
   }
 
   redirectToSegment(segmentId: number): void {
@@ -66,26 +77,35 @@ class SegmentList extends React.Component<unknown, State> {
               <div className="text-center">
                 <span className="fs-3 fw-light">Segments</span>
               </div>
-              <table className="table table-striped table-hover table-sm segment-result-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Distance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.segments.map((segment) => {
-                    return (
-                      <tr key={uuidv4()} style={{ cursor: 'pointer' }} onClick={() => this.redirectToSegment(segment.segmentId ?? 0)}>
-                        <td>{segment.segmentName}</td>
-                        <td>
-                          {UnitConverter.convertMetersToUnit(segment.distanceInMeters, this.user.distanceUnit)} {this.user.distanceUnit}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              {state.isLoading && (
+                <div className="d-flex justify-content-center">
+                  <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              )}
+              {!state.isLoading && (
+                <table className="table table-striped table-hover table-sm segment-result-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Distance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.segments.map((segment) => {
+                      return (
+                        <tr key={uuidv4()} style={{ cursor: 'pointer' }} onClick={() => this.redirectToSegment(segment.segmentId ?? 0)}>
+                          <td>{segment.segmentName}</td>
+                          <td>
+                            {UnitConverter.convertMetersToUnit(segment.distanceInMeters, this.user.distanceUnit)} {this.user.distanceUnit}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
