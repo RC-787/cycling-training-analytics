@@ -1,6 +1,6 @@
 import React from 'react';
 import Navbar from '../components/navbar';
-import ActivityCarousel from '../components/activityCarousel';
+import RecentActivities from '../components/recentActivities';
 import FitnessTracker from '../components/fitnessTracker';
 import UserContext, { UserContextType } from '../common/userContext';
 import CriticalPowerRecord from '../components/criticalPowerRecord';
@@ -23,7 +23,7 @@ class Dashboard extends React.Component<unknown> {
         <Navbar />
         <div className="row pb-3">
           <div className="col-12 mt-5">
-            <ActivityCarousel user={this.user} />
+            <RecentActivities user={this.user} />
           </div>
           <div className="col-12 mt-5">
             <FitnessTracker user={this.user} />
