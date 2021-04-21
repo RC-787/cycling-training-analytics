@@ -1,6 +1,18 @@
 # cycling-training-analytics
 A cycling training analysis platform built using Electron and react.
 
+## Overview
+Built using:
+<br>
+[Electron](https://github.com/electron/electron)
+<br>
+[react](https://github.com/facebook/react)
+<br>
+[TypeScript](https://github.com/microsoft/TypeScript)
+<br>
+[Dexie.js](https://github.com/dfahlander/Dexie.js)
+<br>
+[ECharts](https://github.com/apache/echarts)
 
 ## Install
 
