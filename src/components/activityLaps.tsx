@@ -1,6 +1,7 @@
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Modal } from 'bootstrap';
+import PubSub from 'pubsub-js';
 import UnitConverter from '../common/unitConverter';
 import Activity from '../types/activity';
 
@@ -57,6 +58,11 @@ export default class ActivityLaps extends React.Component<Props> {
     const { deleteLapCallback } = this.props;
     deleteLapCallback(this.lapToDelete);
     this.modal?.hide();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  zoomToLap(lap: LapDetails): void {
+    PubSub.publish('zoom-to-selection', { startIndex: lap.startIndex, endIndex: lap.endIndex });
   }
 
   render(): JSX.Element {
@@ -117,7 +123,7 @@ export default class ActivityLaps extends React.Component<Props> {
             <tbody>
               {lapDetails.map((lap) => {
                 return (
-                  <tr key={uuidv4()} style={{ cursor: 'pointer' }}>
+                  <tr key={uuidv4()}>
                     <td>{UnitConverter.convertSecondsToHHmmss(lap.durationInSeconds)}</td>
                     <td>{UnitConverter.convertMetersToUnit(lap.distanceInMeters, distanceUnit)}</td>
                     <td>{lap.averagePower ?? 'N/A'}</td>
@@ -129,10 +135,29 @@ export default class ActivityLaps extends React.Component<Props> {
                         : 'N/A'}
                     </td>
                     <td className="text-end">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        fill="currentColor"
+                        viewBox="0 0 16 16"
+                        className="align-top me-2"
+                        role="button"
+                        onClick={() => this.zoomToLap(lap)}
+                      >
+                        <path fillRule="evenodd" d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z" />
+                        <path d="M10.344 11.742c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1 6.538 6.538 0 0 1-1.398 1.4z" />
+                        <path
+                          fillRule="evenodd"
+                          d="M6.5 3a.5.5 0 0 1 .5.5V6h2.5a.5.5 0 0 1 0 1H7v2.5a.5.5 0 0 1-1 0V7H3.5a.5.5 0 0 1 0-1H6V3.5a.5.5 0 0 1 .5-.5z"
+                        />
+                        <title>Zoom to Lap</title>
+                      </svg>
                       <button
                         type="button"
                         className="btn-close btn-close-white"
                         aria-label="Close"
+                        title="Delete Lap"
                         onClick={() => this.showConfirmDeleteModal({ startIndex: lap.startIndex, endIndex: lap.endIndex })}
                       />
                     </td>

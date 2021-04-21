@@ -305,6 +305,10 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
   }
 
   componentDidMount(): void {
+    PubSub.subscribe('zoom-to-selection', (_msg: unknown, args: { startIndex: number; endIndex: number }) => {
+      this.zoomToSelection(args);
+    });
+
     const saveSegmentModalElement = document.getElementById(this.saveSegmentModalId);
     if (saveSegmentModalElement !== null) {
       this.saveSegmentModal = new Modal(saveSegmentModalElement);
@@ -322,6 +326,10 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       PubSub.publish('performance-analysis-chart-hover-end');
     });
     this.chart.on('datazoom', this.dataZoomEvent.bind(this));
+  }
+
+  componentWillUnmount(): void {
+    PubSub.unsubscribe('zoom-to-selection');
   }
 
   getChartOptions(): Record<string, unknown> {
@@ -535,6 +543,26 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
     return zoomSummary;
   }
 
+  zoomToSelection(args: { startIndex: number; endIndex: number }): void {
+    PubSub.publish('performance-analysis-chart-zoom', args);
+    const { activity } = this.props;
+    const dataLength = activity.distanceData?.length;
+    if (dataLength !== undefined) {
+      this.chart?.dispatchAction({
+        type: 'dataZoom',
+        start: (args.startIndex / dataLength) * 100,
+        end: (args.endIndex / dataLength) * 100,
+      });
+      this.setState({ chartHasBeenZoomed: true, zoomSummary: this.getZoomSummary(args.startIndex, args.endIndex) }, () => {
+        this.chart?.dispatchAction({
+          type: 'takeGlobalCursor',
+          key: 'dataZoomSelect',
+          dataZoomSelectActive: false,
+        });
+      });
+    }
+  }
+
   mouseDownEvent(): void {
     this.chart?.dispatchAction({
       type: 'takeGlobalCursor',
@@ -548,17 +576,27 @@ export default class PerformanceAnalysis extends React.Component<Props, State> {
       const batch = args.batch as Array<Record<string, unknown>>;
       const startIndex = Math.round(Number(batch[0].startValue));
       const endIndex = Math.round(Number(batch[0].endValue));
+      if (this.zoomedDataStartIndex !== startIndex) {
+        // Occasionally the zoom doesn't seem to trigger on the chart, manually triggering datazoom whenever the startIndex changes seems to fix it
+        const { activity } = this.props;
+        const dataLength = activity.distanceData?.length;
+        if (dataLength !== undefined) {
+          this.chart?.dispatchAction({
+            type: 'dataZoom',
+            start: (startIndex / dataLength) * 100,
+            end: (endIndex / dataLength) * 100,
+          });
+        }
+      }
       this.zoomedDataStartIndex = startIndex;
       this.zoomedDataEndIndex = endIndex;
 
-      this.setState({
-        chartHasBeenZoomed: true,
-        zoomSummary: this.getZoomSummary(startIndex, endIndex),
-      });
-      this.chart?.dispatchAction({
-        type: 'takeGlobalCursor',
-        key: 'dataZoomSelect',
-        dataZoomSelectActive: false,
+      this.setState({ chartHasBeenZoomed: true, zoomSummary: this.getZoomSummary(startIndex, endIndex) }, () => {
+        this.chart?.dispatchAction({
+          type: 'takeGlobalCursor',
+          key: 'dataZoomSelect',
+          dataZoomSelectActive: false,
+        });
       });
 
       PubSub.publish('performance-analysis-chart-zoom', { startIndex, endIndex });
